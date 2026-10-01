@@ -1,0 +1,38 @@
+= aerospace-new-window-or-open(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Open a new window of the app, or launch the app if it isn't running.
+// end::purpose[]
+:manname: aerospace-new-window-or-open
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace new-window-or-open [-h|--help] <app-name>
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+If an app with the given name is running, it is activated and receives `cmd-n`.
+Otherwise it is launched with `open -a <app-name>`.
+The name is matched case-insensitively.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+<app-name>:: App name as shown in Finder, e.g. `Safari`.
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]
