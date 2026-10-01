@@ -4,6 +4,28 @@ Hyprland-like window manager for macOS: tiling, status bar, borders and plugins 
 Fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) (MIT, © Nikita Bobko, see `LICENSE.txt`).
 Design: [`docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md`](docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md)
 
+## Development
+
+Requires Xcode and Swift 6.4 (`.swift-version`). Run `make help` for every target.
+
+| Command | What it does |
+|---|---|
+| `make build` | Debug build, warnings as errors |
+| `make test-unit` | Unit tests (XCTest, all classes except `*IntegrationTest`) |
+| `make test-integration` | `*IntegrationTest` classes plus checks on the real CLI binary |
+| `make lint` | swiftformat, swiftlint, periphery |
+| `make app` | Release `HyprDarwin.app` + `hypr` CLI in `.release/` |
+| `make app-install` | Same, then installs to `/Applications` and `~/.local/bin/hypr` |
+| `make ci` | Everything the CI `test` and `lint` jobs run |
+
+Tests:
+- **Unit tests** live in `Sources/AppBundleTests/` (upstream layout).
+- **Integration tests** cross a real boundary: a file on disk, a process, the CLI binary or the app bundle. Name their XCTest classes `*IntegrationTest`. Bundle checks run with `script/test-integration.sh --app <path>`.
+
+Signing: `make app-install` signs with `$HYPRDARWIN_CODESIGN_IDENTITY` (default `hyprdarwin-codesign-certificate`, a self-signed code-signing certificate made in Keychain Access). A stable identity keeps the Accessibility permission across rebuilds.
+
+CI (`.github/workflows/ci.yml`): `test` (macOS 15 and 27), `lint`, and `build-app`, which uploads the ad-hoc-signed app as an artifact.
+
 ---
 
 *Original AeroSpace README follows.*

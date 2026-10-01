@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # Oldest and newest supported runners. Runner images:
+        # https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md
+        # https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md
+        os: [macos-15, xcode-27]
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./.github/gh-actions-runner-xcode-select.sh
+      - run: brew update && brew install swiftly bash
+      - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
+      - name: Build (warnings as errors)
+        run: ./build-debug.sh -Xswiftc -warnings-as-errors
+      - name: Unit tests
+        run: ./script/test-unit.sh
+      - name: Integration tests
+        run: ./script/test-integration.sh
+
+  lint:
+    name: lint
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./.github/gh-actions-runner-xcode-select.sh
+      - run: brew update && brew install swiftly bash
+      - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
+      - name: Lint (swiftformat, swiftlint, periphery)
+        run: ./lint.sh
+      - name: Generated files are up to date
+        run: ./generate.sh && ./script/check-uncommitted-files.sh
+
+  build-app:
+    name: build-app
+    needs: test
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v6
+      - run: ./.github/gh-actions-runner-xcode-select.sh
+      - run: brew update && brew install swiftly bash
+      - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
+      - name: Build HyprDarwin.app (ad-hoc signed)
+        run: HYPRDARWIN_CODESIGN_IDENTITY=- ./build-app.sh --no-install
+      - name: Integration tests against the app bundle
+        run: ./build-debug.sh && ./script/test-integration.sh --app .release/HyprDarwin.app
+      - name: Package
+        run: cd .release && zip -qry HyprDarwin.zip HyprDarwin.app hypr
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HyprDarwin-${{ github.sha }}
+          path: .release/HyprDarwin.zip
