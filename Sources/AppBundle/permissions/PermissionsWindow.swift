@@ -11,7 +11,7 @@ import SwiftUI
         window.title = "\(aeroSpaceAppName) Permissions"
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
-        window.level = .floating
+        window.level = .normal // Not .floating: it would cover System Settings after "Open Settings"
         permissionsWindow = window
     }
     NSApp.activate(ignoringOtherApps: true)

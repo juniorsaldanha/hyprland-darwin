@@ -39,6 +39,7 @@ private let permissionsWindowShownKey = "permissionsWindowShownOnce"
             postPermissionMissingNotification()
         case .resume(let enableServer):
             TrayMenuModel.shared.axPermissionStatus = .granted
+            rebuildModifierDragTap()
             if enableServer {
                 try? await runLightSession(.permissionMonitor, .forceRun) {
                     _ = await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .on)).run(.defaultEnv, .emptyStdin)

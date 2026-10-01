@@ -9,20 +9,17 @@ private struct DragState {
 
 @MainActor private var eventTap: CFMachPort? = nil
 @MainActor private var requiredFlags: CGEventFlags = []
-/// True between a swallowed mouse-down and the next mouse-up
-@MainActor private var isDragging = false
 @MainActor private var dragState: DragState? = nil
+/// Window being moved by modifier+drag. isManipulatedWithMouse treats it as dragged right away:
+/// before native focus lands, and regardless of NSEvent.pressedMouseButtons (the tap swallowed the mouse-down)
+@MainActor var modifierDragWindowId: UInt32? = nil
 
 @MainActor func syncModifierDrag(_ config: Config) {
     requiredFlags = config.mouseDrag.modifier
     if config.mouseDrag.enabled == (eventTap != nil) { return }
 
     if !config.mouseDrag.enabled {
-        if let eventTap {
-            CGEvent.tapEnable(tap: eventTap, enable: false)
-            CFMachPortInvalidate(eventTap)
-        }
-        eventTap = nil
+        removeModifierDragTap()
         return
     }
 
@@ -44,10 +41,60 @@ private struct DragState {
     eventTap = tap
 }
 
+/// A tap created before Accessibility was revoked stays dead after the re-grant
+@MainActor func rebuildModifierDragTap() {
+    removeModifierDragTap()
+    syncModifierDrag(config)
+}
+
+@MainActor private func removeModifierDragTap() {
+    if let eventTap {
+        CGEvent.tapEnable(tap: eventTap, enable: false)
+        CFMachPortInvalidate(eventTap)
+    }
+    eventTap = nil
+    dragState = nil
+    modifierDragWindowId = nil
+}
+
 /// Exact match on alt/cmd/ctrl/shift, so alt+shift+click still reaches apps when the modifier is 'alt'
 func modifierDragMatches(_ flags: CGEventFlags, _ required: CGEventFlags) -> Bool {
     let relevant: CGEventFlags = [.maskAlternate, .maskCommand, .maskControl, .maskShift]
     return !required.isEmpty && flags.intersection(relevant) == required
+}
+
+struct OnScreenWindow: Equatable {
+    let id: UInt32
+    let layer: Int
+    let bounds: CGRect
+}
+
+/// Front-to-back. Bounds are global, top-left origin (same space as Accessibility frames and CGEvent.location).
+/// Reads no window titles, so it needs no Screen Recording permission.
+func onScreenWindows() -> [OnScreenWindow] {
+    let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+    return list.compactMap { info in
+        guard let id = info[kCGWindowNumber as String] as? UInt32,
+              let layer = info[kCGWindowLayer as String] as? Int,
+              let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+              let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else { return nil }
+        return OnScreenWindow(id: id, layer: layer, bounds: bounds)
+    }
+}
+
+/// The managed window to drag, or nil to let the click through (desktop, menu bar, Dock, popups, unmanaged windows).
+/// Decided synchronously, so a click is only swallowed when there is something to drag.
+@MainActor func modifierDragTarget(
+    flags: CGEventFlags,
+    required: CGEventFlags,
+    at point: CGPoint,
+    onScreen: @autoclosure () -> [OnScreenWindow],
+) -> (window: Window, frame: CGRect)? {
+    guard modifierDragMatches(flags, required),
+          let hit = onScreen().first(where: { $0.bounds.contains(point) }),
+          hit.layer == 0, // kCGNormalWindowLevel: not the menu bar, Dock, or overlays
+          let window = Window.get(byId: hit.id) else { return nil }
+    return (window, hit.bounds)
 }
 
 private func modifierDragCallback(
@@ -59,7 +106,7 @@ private func modifierDragCallback(
     // The tap's run loop source is on the main run loop
     // CGEvent isn't Sendable: hand the main actor plain values
     let flags = event.flags
-    let location = event.location // Global, top-left origin: same space as Accessibility frames
+    let location = event.location
     let swallow = MainActor.assumeIsolated { handleModifierDragEvent(type, flags: flags, location: location) }
     return swallow ? nil : unsafe Unmanaged.passUnretained(event)
 }
@@ -71,48 +118,26 @@ private func modifierDragCallback(
             if let eventTap { CGEvent.tapEnable(tap: eventTap, enable: true) }
             return false
         case .leftMouseDown:
-            guard TrayMenuModel.shared.isEnabled, modifierDragMatches(flags, requiredFlags) else { return false }
-            isDragging = true
-            dragState = nil
-            Task.startUnstructured { @MainActor in
-                guard let window = await windowUnderPoint(location),
-                      let rect = try? await window.getAxRect(.nonCancellable),
-                      isDragging else { return }
-                window.nativeFocus()
-                dragState = DragState(window: window, startMouse: location, startTopLeft: rect.topLeftCorner)
-            }
+            guard TrayMenuModel.shared.isEnabled,
+                  let target = modifierDragTarget(flags: flags, required: requiredFlags, at: location, onScreen: onScreenWindows())
+            else { return false }
+            target.window.nativeFocus()
+            modifierDragWindowId = target.window.windowId
+            dragState = DragState(window: target.window, startMouse: location, startTopLeft: target.frame.origin)
             return true
         case .leftMouseDragged:
-            guard isDragging else { return false }
-            if let state = dragState {
-                let mouse = location
-                state.window.setAxFrame(
-                    CGPoint(x: state.startTopLeft.x + mouse.x - state.startMouse.x, y: state.startTopLeft.y + mouse.y - state.startMouse.y),
-                    nil,
-                )
-            }
+            guard let state = dragState else { return false }
+            state.window.setAxFrame(
+                CGPoint(x: state.startTopLeft.x + location.x - state.startMouse.x, y: state.startTopLeft.y + location.y - state.startMouse.y),
+                nil,
+            )
             return true
         case .leftMouseUp:
             // Passed through on purpose: GlobalObserver's leftMouseUp monitor finishes the move
-            isDragging = false
             dragState = nil
+            modifierDragWindowId = nil
             return false
         default:
             return false
     }
-}
-
-@concurrent
-private nonisolated func windowIdUnderPoint(_ point: CGPoint) async -> UInt32? {
-    let systemwide = AXUIElementCreateSystemWide()
-    var element: AXUIElement?
-    if unsafe AXUIElementCopyElementAtPosition(systemwide, Float(point.x), Float(point.y), &element) != .success {
-        return nil
-    }
-    return element?.containingWindowId()
-}
-
-@MainActor private func windowUnderPoint(_ point: CGPoint) async -> Window? {
-    guard let windowId = await windowIdUnderPoint(point) else { return nil }
-    return Window.get(byId: windowId)
 }

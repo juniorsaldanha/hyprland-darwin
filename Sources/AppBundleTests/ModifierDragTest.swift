@@ -20,3 +20,54 @@ final class ModifierDragTest: XCTestCase {
         assertFalse(modifierDragMatches([], []))
     }
 }
+
+@MainActor
+final class ModifierDragTargetTest: XCTestCase {
+    override func setUp() async throws { setUpWorkspacesForTests() }
+
+    private let box = CGRect(x: 0, y: 0, width: 100, height: 100)
+    private let inside = CGPoint(x: 50, y: 50)
+
+    func testPassesThroughOverDesktop() {
+        _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        let onScreen = [OnScreenWindow(id: 1, layer: 0, bounds: box)]
+        assertNil(modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: CGPoint(x: 500, y: 500), onScreen: onScreen))
+    }
+
+    func testPassesThroughOverMenuBarOrDockEvenAboveAWindow() {
+        _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        let menuBarItem = OnScreenWindow(id: 50, layer: 25, bounds: box)
+        let dock = OnScreenWindow(id: 51, layer: 20, bounds: box)
+        let window = OnScreenWindow(id: 1, layer: 0, bounds: box)
+        assertNil(modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: inside, onScreen: [menuBarItem, window]))
+        assertNil(modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: inside, onScreen: [dock, window]))
+    }
+
+    func testPassesThroughOverUnmanagedWindow() {
+        let popup = OnScreenWindow(id: 99, layer: 0, bounds: box)
+        assertNil(modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: inside, onScreen: [popup]))
+    }
+
+    func testPassesThroughWithExtraModifier() {
+        _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        let onScreen = [OnScreenWindow(id: 1, layer: 0, bounds: box)]
+        assertNil(modifierDragTarget(flags: [.maskAlternate, .maskShift], required: .maskAlternate, at: inside, onScreen: onScreen))
+    }
+
+    func testTargetsTopmostManagedWindow() {
+        _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        _ = TestWindow.new(id: 2, parent: focus.workspace.rootTilingContainer)
+        let front = OnScreenWindow(id: 2, layer: 0, bounds: CGRect(x: 40, y: 40, width: 100, height: 100))
+        let back = OnScreenWindow(id: 1, layer: 0, bounds: box)
+        let target = modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: inside, onScreen: [front, back])
+        assertEquals(target?.window.windowId, 2)
+        assertEquals(target?.frame, front.bounds)
+    }
+
+    func testModifierDragCountsAsManipulatedWithoutNativeFocus() async throws {
+        let window = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        modifierDragWindowId = 1
+        defer { modifierDragWindowId = nil }
+        assertTrue(try await isManipulatedWithMouse(window))
+    }
+}

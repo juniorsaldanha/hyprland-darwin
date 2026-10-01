@@ -61,8 +61,9 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
             openConfigButton()
             reloadConfigButton(warningsAsErrors: false)
         } else {
-            Button("AeroSpace requires accessibility permission to move windows") {
+            Button("\(aeroSpaceAppName) requires accessibility permission to move windows") {
                 viewModel.axPermissionStatus = .waitingWithPrompt
+                showPermissionsWindow()
             }
         }
         Button("Permissions…") { showPermissionsWindow() }
