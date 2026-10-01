@@ -7,6 +7,8 @@ import Foundation
         initTerminationHandler()
         unsafe _isCli = false
         initServerArgs()
+        installNotificationClickHandler()
+        showPermissionsWindowIfNeeded()
         await waitForAccessibilityPermission_nonCancellable()
         if isDebug {
             await toggleReleaseServerIfDebug(.off)
@@ -18,6 +20,7 @@ import Foundation
         _ = await reloadConfig_nonCancellable()
 
         startUnixSocketServer()
+        startPermissionMonitor()
         GlobalObserver.initObserver()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces
         _ = Workspace.all.first?.focusWorkspace()

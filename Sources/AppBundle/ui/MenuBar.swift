@@ -65,6 +65,7 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                 viewModel.axPermissionStatus = .waitingWithPrompt
             }
         }
+        Button("Permissions…") { showPermissionsWindow() }
         Button("Quit \(aeroSpaceAppName)") {
             Task.startUnstructured {
                 terminationHandler?.beforeTermination()
