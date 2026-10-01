@@ -48,7 +48,8 @@ private let jsonEncoder: JSONEncoder = {
     return e
 }()
 
-func broadcastEvent(_ event: ServerEvent) {
+@MainActor func broadcastEvent(_ event: ServerEvent) {
+    notifyEventListeners(event)
     Task.startUnstructured { @MainActor in
         for (id, subscriber) in subscribers {
             guard subscriber.events.contains(event.eventType) else { continue }
