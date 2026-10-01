@@ -1,25 +1,17 @@
 import Common
 import Foundation
 
-let configDotfileName = ".aerospace.toml"
+func hyprDarwinConfigUrl(
+    env: [String: String] = ProcessInfo.processInfo.environment,
+    home: URL = FileManager.default.homeDirectoryForCurrentUser,
+) -> URL {
+    let xdgConfigHome = env["XDG_CONFIG_HOME"].map { URL(filePath: $0) } ?? home.appending(path: ".config/")
+    return xdgConfigHome.appending(path: "hyprland-darwin").appending(path: "config.toml")
+}
+
 func findCustomConfigUrl() -> ConfigFile {
-    let xdgConfigHome = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map { URL(filePath: $0) }
-        ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/")
-    let candidates: [URL] = switch serverArgs.configLocation {
-        case let configLocation?: [URL(filePath: configLocation)]
-        case nil:
-            [
-                FileManager.default.homeDirectoryForCurrentUser.appending(path: configDotfileName),
-                xdgConfigHome.appending(path: "aerospace").appending(path: "aerospace.toml"),
-            ]
-    }
-    let existingCandidates: [URL] = candidates.filter { (candidate: URL) in FileManager.default.fileExists(atPath: candidate.path) }
-    let count = existingCandidates.count
-    return switch count {
-        case 0: .noCustomConfigExists
-        case 1: .file(existingCandidates.first.orDie())
-        default: .ambiguousConfigError(existingCandidates)
-    }
+    let candidate = serverArgs.configLocation.map { URL(filePath: $0) } ?? hyprDarwinConfigUrl()
+    return FileManager.default.fileExists(atPath: candidate.path) ? .file(candidate) : .noCustomConfigExists
 }
 
 enum ConfigFile {

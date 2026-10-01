@@ -91,7 +91,8 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
 func openConfigButton(showShortcutGroup: Bool = false) -> some View {
     let editor = getTextEditorToOpenConfig()
     let button = Button("Open config in '\(editor.lastPathComponent)'") {
-        let fallbackConfig: URL = FileManager.default.homeDirectoryForCurrentUser.appending(path: configDotfileName)
+        let fallbackConfig: URL = hyprDarwinConfigUrl()
+        _ = try? FileManager.default.createDirectory(at: fallbackConfig.deletingLastPathComponent(), withIntermediateDirectories: true)
         switch findCustomConfigUrl() {
             case .file(let url):
                 url.open(with: editor)
