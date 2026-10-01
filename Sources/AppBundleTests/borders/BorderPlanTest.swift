@@ -68,8 +68,8 @@ final class BorderPlanTest: XCTestCase {
         let r = ringRadii(size: CGSize(width: 30, height: 30), width: 5, radius: 100)
         assertEquals(r.outer, 15)
         assertEquals(r.inner, 10)
-        _ = CGPath(roundedRect: CGRect(x: 0, y: 0, width: 30, height: 30), cornerWidth: r.outer, cornerHeight: r.outer, transform: nil)
-        _ = CGPath(roundedRect: CGRect(x: 5, y: 5, width: 20, height: 20), cornerWidth: r.inner, cornerHeight: r.inner, transform: nil)
+        _ = unsafe CGPath(roundedRect: CGRect(x: 0, y: 0, width: 30, height: 30), cornerWidth: r.outer, cornerHeight: r.outer, transform: nil)
+        _ = unsafe CGPath(roundedRect: CGRect(x: 5, y: 5, width: 20, height: 20), cornerWidth: r.inner, cornerHeight: r.inner, transform: nil)
     }
 
     func testNeedsRestack() {
