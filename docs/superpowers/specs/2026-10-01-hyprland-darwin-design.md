@@ -68,6 +68,11 @@ plan and ends with a manual checklist.
 - Clone AeroSpace into this repo and keep an `upstream` remote so
   upstream fixes can be merged in. Check the license is MIT at fork time
   and keep the original LICENSE and attribution.
+- Hyprspace compatibility: the current config uses two Hyprspace-only
+  features that upstream AeroSpace rejects (verified by parsing it):
+  the `[mouse-drag]` section (modifier + drag moves a window) and the
+  `new-window-or-open <app>` command. Both are added in the Core
+  sub-project.
 - Keep changes to AeroSpace's own files small. New code lives in new
   files and modules, so merges from upstream stay cheap.
 - Working name `hyprland-darwin`. App: `HyprDarwin.app`. CLI: `hypr`.
@@ -128,7 +133,7 @@ as the bar. It is built in the Bar sub-project after the bar works.
 | Permission | Required | Why |
 |---|---|---|
 | Accessibility | Yes | Reading, moving and resizing windows |
-| Input Monitoring | Only if `mouse-drag` / `focus-follows-mouse` is on **and** the core spike shows it's needed | Global mouse handling |
+| Input Monitoring | Not requested unless the `mouse-drag` event tap fails with Accessibility granted | `focus-follows-mouse` uses an `NSEvent` mouse-moved monitor, which needs no permission (verified in AeroSpace's source). `mouse-drag` uses an active event tap, which Accessibility covers. |
 | Notifications | Optional | Posting the "permission missing" alert |
 
 Screen Recording isn't requested.
