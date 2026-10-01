@@ -54,6 +54,15 @@ final class ModifierDragTargetTest: XCTestCase {
         assertNil(modifierDragTarget(flags: [.maskAlternate, .maskShift], required: .maskAlternate, at: inside, onScreen: onScreen))
     }
 
+    func testSkipsOurOwnBorderOverlays() {
+        // A border overlay of a floating window overlaps the tiled window under it by `borders.width`
+        _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        let borderOverlay = OnScreenWindow(id: 70, layer: 0, bounds: box, ownerPid: myPid)
+        let window = OnScreenWindow(id: 1, layer: 0, bounds: box)
+        let target = modifierDragTarget(flags: .maskAlternate, required: .maskAlternate, at: inside, onScreen: [borderOverlay, window])
+        assertEquals(target?.window.windowId, 1)
+    }
+
     func testTargetsTopmostManagedWindow() {
         _ = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
         _ = TestWindow.new(id: 2, parent: focus.workspace.rootTilingContainer)

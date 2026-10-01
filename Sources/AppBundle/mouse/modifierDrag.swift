@@ -67,6 +67,7 @@ struct OnScreenWindow: Equatable {
     let id: UInt32
     let layer: Int
     let bounds: CGRect
+    var ownerPid: pid_t = 0
 }
 
 /// Front-to-back. Bounds are global, top-left origin (same space as Accessibility frames and CGEvent.location).
@@ -78,7 +79,7 @@ func onScreenWindows() -> [OnScreenWindow] {
               let layer = info[kCGWindowLayer as String] as? Int,
               let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
               let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary) else { return nil }
-        return OnScreenWindow(id: id, layer: layer, bounds: bounds)
+        return OnScreenWindow(id: id, layer: layer, bounds: bounds, ownerPid: info[kCGWindowOwnerPID as String] as? pid_t ?? 0)
     }
 }
 
@@ -91,7 +92,8 @@ func onScreenWindows() -> [OnScreenWindow] {
     onScreen: @autoclosure () -> [OnScreenWindow],
 ) -> (window: Window, frame: CGRect)? {
     guard modifierDragMatches(flags, required),
-          let hit = onScreen().first(where: { $0.bounds.contains(point) }),
+          // Skip our own windows: border overlays sit at layer 0 and extend `borders.width` past their window
+          let hit = onScreen().first(where: { $0.ownerPid != myPid && $0.bounds.contains(point) }),
           hit.layer == 0, // kCGNormalWindowLevel: not the menu bar, Dock, or overlays
           let window = Window.get(byId: hit.id) else { return nil }
     return (window, hit.bounds)

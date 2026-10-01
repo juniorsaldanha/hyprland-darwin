@@ -32,5 +32,9 @@ import Common
         forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main,
     ) { _ in MainActor.assumeIsolated { requestBordersSync() } })
     observers.append(TrayMenuModel.shared.$isEnabled.sink { _ in MainActor.assumeIsolated { requestBordersSync() } })
+    // .transient overlays follow you to a new Space: drop the old Space's rings at once, without waiting for the AX refresh
+    observers.append(NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main,
+    ) { _ in MainActor.assumeIsolated { requestBordersSync() } })
     requestBordersSync()
 }
