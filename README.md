@@ -1,3 +1,13 @@
+# HyprDarwin
+
+Hyprland-like window manager for macOS: tiling, status bar, borders and plugins in one app.
+Fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) (MIT, © Nikita Bobko, see `LICENSE.txt`).
+Design: [`docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md`](docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md)
+
+---
+
+*Original AeroSpace README follows.*
+
 # AeroSpace Beta [![Build](https://github.com/nikitabobko/AeroSpace/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/nikitabobko/AeroSpace/actions/workflows/build.yml)
 
 <img src="./resources/Assets.xcassets/AppIcon.appiconset/icon.png" width="40%" align="right">
