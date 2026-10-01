@@ -8,6 +8,7 @@ func resizedObs(_: AXObserver, ax: AXUIElement, notif: CFString, _: UnsafeMutabl
     let notif = notif as String
     let windowId = ax.containingWindowId()
     Task.startUnstructured { @MainActor in
+        requestBordersSync() // follow live drags/resizes, before any session work
         guard let token: RunSessionGuard = .isServerEnabled else { return }
         guard let windowId, let window = Window.get(byId: windowId), try await isManipulatedWithMouse(window) else {
             scheduleCancellableCompleteRefreshSession(.ax(notif))

@@ -28,7 +28,8 @@ import QuartzCore
         for (windowId, overlay) in overlays {
             guard order.contains(windowId) else { continue } // target closed or off screen: next plan removes it
             guard needsRestack(overlayId: UInt32(overlay.windowNumber), targetId: windowId, order: order) else { continue }
-            // A background app can't raise its window above another app's windows, but it can lower it
+            // A background app can't raise its window above another app's windows, but it can lower it.
+            // Proven by the spike; NOT covered by tests (same-process windows aren't restricted). Keep it.
             overlay.orderFrontRegardless()
             overlay.order(.below, relativeTo: Int(windowId))
         }

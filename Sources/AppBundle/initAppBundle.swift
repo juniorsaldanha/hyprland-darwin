@@ -22,6 +22,7 @@ import Foundation
         startUnixSocketServer()
         startPermissionMonitor()
         GlobalObserver.initObserver()
+        startBorders()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces
         _ = Workspace.all.first?.focusWorkspace()
         await runHeavyCompleteRefreshSession(
