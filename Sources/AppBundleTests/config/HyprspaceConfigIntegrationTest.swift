@@ -10,4 +10,20 @@ final class HyprspaceConfigIntegrationTest: XCTestCase {
         assertEquals(result.errors, [])
         assertEquals(result.config.mouseDrag, MouseDrag(enabled: true, modifier: .maskAlternate))
     }
+
+    /// After migrating: the user's config plus a [borders] section replacing JankyBorders
+    func testUserConfigWithBordersSectionParses() {
+        let toml = try! String(contentsOf: projectRoot.appending(component: "docs/config-examples/hyprspace-migrated-config.toml"), encoding: .utf8)
+        let result = parseConfig(toml + """
+
+            [borders]
+                enabled = true
+                width = 5
+                radius = 10
+                active = 'gradient(0xff7aa2f7,0xffbb9af7)'
+                inactive = '0x80414868'
+            """)
+        assertEquals(result.errors, [])
+        assertTrue(result.config.borders.enabled)
+    }
 }

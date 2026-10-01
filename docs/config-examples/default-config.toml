@@ -80,6 +80,15 @@ gaps.outer.bottom =     0
 gaps.outer.top =        0
 gaps.outer.right =      0
 
+# Window borders (built in; replaces JankyBorders)
+# Colors are 0xAARRGGBB. 'active' may be a gradient: 'gradient(0xAARRGGBB,0xAARRGGBB)' (top-left -> bottom-right)
+# Borders are drawn outside windows: use inner/outer gaps of at least 'borders.width'
+borders.enabled = false
+borders.width = 5
+borders.radius = 10
+borders.active = 'gradient(0xff7aa2f7,0xffbb9af7)'
+borders.inactive = '0x80414868'
+
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 # 'main' binding mode must be always presented
