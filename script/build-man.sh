@@ -26,7 +26,7 @@ Report bugs at https://github.com/juniorsaldanha/hyprland-darwin/issues
 
 == License
 
-MIT. HyprDarwin is a fork of AeroSpace, Copyright (C) 2023 Nikita Bobko.
+MIT. Copyright (C) 2026 Junior Saldanha (HyprDarwin), Copyright (C) 2023 Nikita Bobko (AeroSpace).
 
 == AUTHOR
 
