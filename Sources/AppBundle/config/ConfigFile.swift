@@ -5,8 +5,7 @@ func hyprDarwinConfigUrl(
     env: [String: String] = ProcessInfo.processInfo.environment,
     home: URL = FileManager.default.homeDirectoryForCurrentUser,
 ) -> URL {
-    let xdgConfigHome = env["XDG_CONFIG_HOME"].map { URL(filePath: $0) } ?? home.appending(path: ".config/")
-    return xdgConfigHome.appending(path: "hyprland-darwin").appending(path: "config.toml")
+    hyprDarwinConfigDir(env: env, home: home).appending(path: "config.toml")
 }
 
 func findCustomConfigUrl() -> ConfigFile {
