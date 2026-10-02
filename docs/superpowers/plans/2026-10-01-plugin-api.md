@@ -935,7 +935,7 @@ final class SpawnPluginIntegrationTest: XCTestCase {
 
         let parts = output.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ").map(String.init)
         assertEquals(parts[0], parts[1]) // pgid == pid: its own process group
-        assertEquals(parts[2], (dir.path as NSString).resolvingSymlinksInPath)
+        assertTrue(parts[2].hasSuffix(dir.path)) // /var is a symlink to /private/var
         assertEquals(parts[3], "bar")
         XCTAssertLessThanOrEqual(Int(parts[4]) ?? 99, 5) // no leaked parent fds
     }
@@ -1563,7 +1563,7 @@ final class PluginProcess: @unchecked Sendable {
 
     private func runOnce(_ seconds: Int) {
         guard !isStopped, !intervalRunning else { return }
-        let devNull = open("/dev/null", O_RDONLY)
+        let devNull = unsafe open("/dev/null", O_RDONLY)
         defer { close(devNull) }
         guard let child = spawn(stdin: devNull) else { return finishInterval(success: false) }
         intervalRunning = true
