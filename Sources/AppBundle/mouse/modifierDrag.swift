@@ -34,7 +34,16 @@ private struct DragState {
         eventsOfInterest: mask,
         callback: modifierDragCallback,
         userInfo: nil,
-    ) else { return }
+    ) else {
+        // Without the tap alt+drag silently does nothing: say so
+        appLog.write("mouse-drag: macOS refused the event tap, alt+drag is off")
+        MessageModel.shared.message = Message(
+            description: "Mouse drag",
+            body: "alt+drag (mouse-drag) is off: macOS refused HyprDarwin's event tap. Check that HyprDarwin is enabled in System Settings → Privacy & Security → Accessibility, then reload the config.",
+            containsWarnings: true,
+        )
+        return
+    }
     let source = CFMachPortCreateRunLoopSource(nil, tap, 0)
     CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
     CGEvent.tapEnable(tap: tap, enable: true)

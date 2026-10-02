@@ -7,16 +7,18 @@ cd "$(dirname "$0")/.."
 source ./script/setup.sh
 
 app=""
+skip_xctest=0
 while test $# -gt 0; do
     case $1 in
         --app) app="$2"; shift 2 ;;
+        --skip-xctest) skip_xctest=1; shift ;;
         *) echo "Unknown option $1" > /dev/stderr; exit 1 ;;
     esac
 done
 
 fail() { echo "❌ integration: $*" > /dev/stderr; exit 1; }
 
-if grep -rqE 'class [A-Za-z]+IntegrationTest\b' Sources/AppBundleTests; then
+if test $skip_xctest = 0 && grep -rqE 'class [A-Za-z]+IntegrationTest\b' Sources/AppBundleTests; then
     swift test --filter IntegrationTest
 fi
 

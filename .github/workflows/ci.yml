@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: ["**"] # every branch gets CI, not only main
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -58,7 +58,7 @@ jobs:
       - name: Build HyprDarwin.app (ad-hoc signed)
         run: HYPRDARWIN_CODESIGN_IDENTITY=- ./build-app.sh --no-install
       - name: Integration tests against the app bundle
-        run: ./build-debug.sh && ./script/test-integration.sh --app .release/HyprDarwin.app
+        run: ./build-debug.sh && ./script/test-integration.sh --skip-xctest --app .release/HyprDarwin.app # XCTest already ran in the test job
       - name: Package
         run: cd .release && zip -qry HyprDarwin.zip HyprDarwin.app hypr
       - uses: actions/upload-artifact@v4

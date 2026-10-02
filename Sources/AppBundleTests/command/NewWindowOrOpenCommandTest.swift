@@ -15,4 +15,12 @@ final class NewWindowOrOpenCommandTest: XCTestCase {
         assertFalse(appNameMatches("Arc", "Archive Utility"))
         assertFalse(appNameMatches("rio", nil))
     }
+
+    func testUnknownAppFailsWithAMessage() {
+        let io = CmdIoImpl(stdin: .emptyStdin)
+        let args = NewWindowOrOpenCmdArgs(rawArgs: []).copy(\.appName, .initialized("HyprDarwinNoSuchApp"))
+        let result = NewWindowOrOpenCommand(args: args).run(.defaultEnv, io)
+        assertEquals(result, .fail)
+        assertEquals(io.stderr, ["App 'HyprDarwinNoSuchApp' not found"])
+    }
 }

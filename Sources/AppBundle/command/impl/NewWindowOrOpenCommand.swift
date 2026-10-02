@@ -12,10 +12,14 @@ struct NewWindowOrOpenCommand: Command {
             postCmdN(to: app.processIdentifier)
             return .succ
         }
+        // `open -a` exits within ~0.1 s once Launch Services resolves the name: non-zero means no such app
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/open")
         process.arguments = ["-a", name]
-        return .from(bool: Result { try process.run() }.isSuccess)
+        process.standardError = FileHandle.nullDevice
+        guard (try? process.run()) != nil else { return .fail(io.err("Can't run /usr/bin/open")) }
+        process.waitUntilExit()
+        return process.terminationStatus == 0 ? .succ : .fail(io.err("App '\(name)' not found"))
     }
 }
 

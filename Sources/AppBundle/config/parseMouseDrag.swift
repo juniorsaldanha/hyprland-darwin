@@ -27,7 +27,11 @@ private func parseMouseDragModifier(_ raw: OrderedJson, _ backtrace: ConfigBackt
         return .failure(.init(backtrace, expectedActualTypeError(expected: .string, actual: raw.tomlType)))
     }
     var flags: CGEventFlags = []
-    for part in str.split(separator: "-") {
+    for part in str.split(separator: "-", omittingEmptySubsequences: false) {
+        if part.isEmpty, !str.isEmpty {
+            return .failure(.init(backtrace, "Invalid modifier '\(str)'. Possible values: alt, cmd, ctrl, shift (combine with '-', e.g. 'cmd-alt')"))
+        }
+        if part.isEmpty { continue }
         guard let flag = modifierFlagsByName[String(part)] else {
             return .failure(.init(backtrace, "Unknown modifier '\(part)'. Possible values: alt, cmd, ctrl, shift (combine with '-', e.g. 'cmd-alt')"))
         }

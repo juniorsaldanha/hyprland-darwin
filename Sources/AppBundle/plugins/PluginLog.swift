@@ -48,3 +48,6 @@ final class PluginLog: @unchecked Sendable { // mutable state only touched on `q
         }
     }
 }
+
+/// HyprDarwin's own log (things that would otherwise fail silently): ~/Library/Logs/hyprland-darwin/hyprdarwin.log
+let appLog = PluginLog(name: "hyprdarwin")
