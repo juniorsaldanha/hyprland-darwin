@@ -4,6 +4,7 @@ import Foundation
 
 @MainActor public func initAppBundle() {
     Task.startUnstructured {
+        registerBundledFonts()
         initTerminationHandler()
         unsafe _isCli = false
         initServerArgs()

@@ -57,6 +57,7 @@ if test -n "$app"; then
     test -x "$app/Contents/MacOS/HyprDarwin" || fail "missing executable Contents/MacOS/HyprDarwin"
     test -f "$app/Contents/Resources/default-config.toml" || fail "missing Contents/Resources/default-config.toml"
     test -x "$app/Contents/Resources/bundled-plugins/example/example.sh" || fail "missing bundled-plugins/example in the app bundle"
+    test -f "$app/Contents/Resources/bundled-fonts/HackNerdFont-Bold.ttf" || fail "missing bundled-fonts in the app bundle"
     codesign -v "$app" || fail "codesign verification failed for $app"
 fi
 

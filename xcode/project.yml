@@ -23,6 +23,9 @@ targets:
       - path: "../bundled-plugins"
         type: folder
         buildPhase: resources
+      - path: "../bundled-fonts"
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: AeroSpacePackage
         product: AppBundle
