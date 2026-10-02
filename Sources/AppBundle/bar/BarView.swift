@@ -113,6 +113,7 @@ struct BarItemView: View {
 
 /// An icon drawn into an image as wide as its whole drawing. A SwiftUI `Text` clips a Nerd Font glyph to about its
 /// advance width (the right of the CPU chip went missing), and lays the label out over the rest.
+/// Vertically, the glyph's ink is centred on the label's digits: Nerd Font glyphs sit high in their line box.
 struct BarIcon: View {
     let icon: String
     let config: BarConfig
@@ -120,13 +121,16 @@ struct BarIcon: View {
 
     var body: some View {
         let font = barIconNSFont(family: config.font, size: CGFloat(config.iconSize))
+        let ink = barIconInk(icon, font: font)
         let nsColor = NSColor(color)
-        let size = NSSize(width: barIconWidth(icon, font: font), height: ceil(font.ascender - font.descender))
+        let size = NSSize(width: barIconWidth(icon, font: font), height: ceil(ink.height) + 2)
         Image(nsImage: NSImage(size: size, flipped: false) { _ in
-            NSAttributedString(string: icon, attributes: [.font: font, .foregroundColor: nsColor])
-                .draw(at: NSPoint(x: barIconLeadingInset(icon, font: font), y: -font.descender))
+            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
+            ctx.textPosition = CGPoint(x: barIconLeadingInset(icon, font: font), y: (size.height - ink.height) / 2 - ink.minY) // baseline
+            CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: icon, attributes: [.font: font, .foregroundColor: nsColor])), ctx)
             return true
         })
+        .offset(y: -barLabelDigitsRise(barIconNSFont(family: config.font, size: CGFloat(config.labelSize))))
     }
 }
 

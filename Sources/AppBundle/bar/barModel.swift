@@ -123,6 +123,42 @@ func barIconWidth(_ icon: String, font: NSFont) -> CGFloat {
     return ceil(max(string.size().width, ink.maxX) - min(0, ink.minX))
 }
 
+/// Where the glyph actually puts ink (points, y up from the baseline). Measured by drawing it: Nerd Fonts report the
+/// whole em box as the outline bounds, but the drawing sits high inside it.
+func barIconInk(_ icon: String, font: NSFont) -> CGRect {
+    let scale: CGFloat = 4
+    let side = font.pointSize * 3 // baseline origin at (pointSize, pointSize): room on every side
+    let pixels = Int(ceil(side * scale))
+    guard let ctx = CGContext(data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: pixels,
+                              space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue),
+        let data = ctx.data else { return CGRect(x: 0, y: font.descender, width: font.pointSize, height: font.pointSize) }
+    ctx.scaleBy(x: scale, y: scale)
+    ctx.textPosition = CGPoint(x: font.pointSize, y: font.pointSize)
+    CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: icon, attributes: [.font: font, .foregroundColor: NSColor.white])), ctx)
+    let bytes = data.bindMemory(to: UInt8.self, capacity: pixels * pixels)
+    var minX = pixels, maxX = -1, minRow = pixels, maxRow = -1
+    for row in 0 ..< pixels {
+        for x in 0 ..< pixels where unsafe bytes[row * pixels + x] > 127 {
+            minX = min(minX, x); maxX = max(maxX, x); minRow = min(minRow, row); maxRow = max(maxRow, row)
+        }
+    }
+    guard maxX >= 0 else { return .zero }
+    // Row 0 is the top of the bitmap
+    return CGRect(
+        x: CGFloat(minX) / scale - font.pointSize,
+        y: CGFloat(pixels - 1 - maxRow) / scale - font.pointSize,
+        width: CGFloat(maxX - minX + 1) / scale,
+        height: CGFloat(maxRow - minRow + 1) / scale,
+    )
+}
+
+/// How far the centre of the label's digits sits above the centre of its line box (where SwiftUI centres the icon)
+func barLabelDigitsRise(_ labelFont: NSFont) -> CGFloat {
+    let descent = -labelFont.descender
+    let lineHeight = labelFont.ascender + descent + labelFont.leading
+    return descent + labelFont.capHeight / 2 - lineHeight / 2
+}
+
 /// How far right to shift an icon whose drawing starts left of its origin, so nothing sticks out on the left either
 func barIconLeadingInset(_ icon: String, font: NSFont) -> CGFloat {
     let ink = NSAttributedString(string: icon, attributes: [.font: font]).boundingRect(with: .zero, options: [.usesDeviceMetrics, .usesLineFragmentOrigin])

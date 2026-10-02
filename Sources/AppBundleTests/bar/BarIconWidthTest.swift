@@ -38,6 +38,31 @@ final class BarIconWidthTest: XCTestCase {
         }
     }
 
+    /// Icon and label must sit on the same vertical centre (the icon's ink against the digits' ink), within 1 pt
+    @MainActor func testIconIsVerticallyCentredOnTheLabel() {
+        _ = NSApplication.shared
+        registerBundledFonts()
+        let config = BarConfig(enabled: true)
+        let font = barIconNSFont(family: config.font, size: CGFloat(config.iconSize))
+        for icon in ["\u{F4BC}", "\u{E266}", "\u{F43A}", "\u{F0200}", "\u{F02CA}"] {
+            let item = BarItem.plugin(name: "w", state: WidgetState(icon: icon, label: "42%"))
+            let host = NSHostingView(rootView: BarItemView(item: item, config: config).frame(height: CGFloat(config.height)).background(Color.black))
+            host.frame = CGRect(origin: .zero, size: host.fittingSize)
+            host.layoutSubtreeIfNeeded()
+            let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+            host.cacheDisplay(in: host.bounds, to: rep)
+            let scale = CGFloat(rep.pixelsWide) / host.bounds.width
+            let split = Int((5 + 8 + barIconWidth(icon, font: font) + 2) * scale) // label starts after the icon's trailing padding
+            func inkCentre(_ xs: Range<Int>) -> CGFloat {
+                let rows = (0 ..< rep.pixelsHigh).filter { y in xs.contains { x in (rep.colorAt(x: x, y: y)?.brightnessComponent ?? 0) > 0.5 } }
+                return CGFloat((rows.first ?? 0) + (rows.last ?? 0)) / 2 / scale
+            }
+            let iconCentre = inkCentre(0 ..< split)
+            let labelCentre = inkCentre(split ..< rep.pixelsWide)
+            XCTAssertEqual(iconCentre, labelCentre, accuracy: 1, "icon U+\(String(icon.unicodeScalars.first!.value, radix: 16)) is off-centre")
+        }
+    }
+
     func testMissingFontFallsBackToSystemFont() {
         assertEquals(barIconNSFont(family: "No Such Font", size: 17).pointSize, 17)
     }
