@@ -29,9 +29,11 @@ if test "$identity" != "-" && ! security find-identity -p codesigning | grep -qF
 fi
 
 ./generate.sh "${generate_args[@]}"
-swift build -c release --product aerospace
+# Universal (Apple Silicon + Intel), like the app. A plain `swift build` targets only this machine's architecture.
+cli_build_args=(-c release --product aerospace --arch arm64 --arch x86_64)
+swift build "${cli_build_args[@]}"
 # setup.sh's swift() wrapper prints `swift --version` first; the bin path is the last line
-cli_bin="$(swift build -c release --product aerospace --show-bin-path | tail -n 1)/aerospace"
+cli_bin="$(swift build "${cli_build_args[@]}" --show-bin-path | tail -n 1)/aerospace"
 
 (
     cd xcode

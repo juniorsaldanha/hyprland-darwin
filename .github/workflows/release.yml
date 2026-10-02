@@ -45,7 +45,11 @@ jobs:
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" --title "HyprDarwin ${{ steps.package.outputs.version }}" --generate-notes
+        # Hand-written notes in docs/releases/<tag>.md when present; GitHub's commit list is appended either way
+        run: |
+          notes=()
+          if test -f "docs/releases/$GITHUB_REF_NAME.md"; then notes=(--notes-file "docs/releases/$GITHUB_REF_NAME.md"); fi
+          gh release create "$GITHUB_REF_NAME" "${{ steps.package.outputs.zip }}" --title "HyprDarwin ${{ steps.package.outputs.version }}" "${notes[@]}" --generate-notes
       - name: Update the Homebrew cask on main
         run: |
           git reset --hard -q # generated files from the build

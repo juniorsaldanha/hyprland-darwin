@@ -89,6 +89,11 @@ if test -n "$app"; then
     test -f "$app/Contents/Resources/bundled-fonts/HackNerdFont-Bold.ttf" || fail "missing bundled-fonts in the app bundle"
     test -f "$app/Contents/Resources/bundled-fonts/LICENSE.md" || fail "the font license must ship with the font (Bitstream Vera / MIT)"
     codesign -v "$app" || fail "codesign verification failed for $app"
+    for bin in "$app/Contents/MacOS/HyprDarwin" "$(dirname "$app")/hypr"; do
+        test -f "$bin" || continue # the CLI sits next to the app in .release/
+        archs="$(lipo -archs "$bin")"
+        [[ $archs == *arm64* && $archs == *x86_64* ]] || fail "$bin must be universal (arm64 + x86_64), is: $archs"
+    done
 fi
 
 echo "✅ Integration tests have passed successfully"
