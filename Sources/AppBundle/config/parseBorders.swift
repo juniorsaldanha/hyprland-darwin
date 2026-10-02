@@ -26,7 +26,7 @@ func parseBorders(_ raw: OrderedJson, _ backtrace: ConfigBacktrace, _ c: inout C
     parseTable(raw, BordersConfig(), bordersParserTable, backtrace, &c)
 }
 
-private func parseIntInRange(_ range: ClosedRange<Int>) -> @Sendable (OrderedJson, ConfigBacktrace) -> ResOrConfigParseDiagnostic<Int> {
+func parseIntInRange(_ range: ClosedRange<Int>) -> @Sendable (OrderedJson, ConfigBacktrace) -> ResOrConfigParseDiagnostic<Int> {
     { raw, backtrace in
         parseInt(raw, backtrace).flatMap { value in
             range.contains(value)
@@ -62,4 +62,8 @@ func parseArgb(_ s: String) -> ResOrStr<UInt32> {
         return .failure("Invalid color '\(s)'. Expected 0xAARRGGBB, e.g. 0xff7aa2f7")
     }
     return .success(value)
+}
+
+func parseArgbConfig(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<UInt32> {
+    parseString(raw, backtrace).flatMap { str in parseArgb(str).mapError { .init(backtrace, $0) } }
 }

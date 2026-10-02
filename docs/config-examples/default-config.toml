@@ -89,6 +89,15 @@ borders.radius = 10
 borders.active = 'gradient(0xff7aa2f7,0xffbb9af7)'
 borders.inactive = '0x80414868'
 
+# Status bar (built in; replaces SketchyBar). Names in left/center/right: built-in widgets
+# 'workspaces', 'front-app', 'chevron', or plugins from ~/.config/hyprland-darwin/plugins or the bundled ones
+# (clock, battery, volume, network, cpu, gpu, ram, disk). Leave room with gaps.outer.top >= bar.height
+bar.enabled = false
+bar.height = 40
+bar.left = ['workspaces', 'chevron', 'front-app']
+bar.right = ['disk', 'ram', 'gpu', 'cpu', 'network', 'volume', 'battery', 'clock']
+
+
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 # 'main' binding mode must be always presented
