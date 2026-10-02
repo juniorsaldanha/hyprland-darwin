@@ -1,5 +1,6 @@
 @testable import AppBundle
 import AppKit
+import SwiftUI
 import XCTest
 
 final class BarIconWidthTest: XCTestCase {
@@ -14,6 +15,26 @@ final class BarIconWidthTest: XCTestCase {
             let width = barIconWidth(icon, font: font)
             XCTAssertGreaterThanOrEqual(width, ink.maxX - min(0, ink.minX), "icon U+\(String(icon.unicodeScalars.first!.value, radix: 16)) overflows")
             XCTAssertGreaterThanOrEqual(width, string.size().width)
+        }
+    }
+
+    /// The CPU chip draws 17 pt wide on a 10 pt advance: rendered, its ink must reach its right edge, not stop at the advance
+    @MainActor func testRenderedIconIsNotClipped() {
+        _ = NSApplication.shared
+        registerBundledFonts()
+        let config = BarConfig(enabled: true)
+        let font = barIconNSFont(family: config.font, size: CGFloat(config.iconSize))
+        for icon in ["\u{F4BC}", "\u{F43A}", "\u{E266}"] {
+            let host = NSHostingView(rootView: BarIcon(icon: icon, config: config, color: .white).background(Color.black))
+            host.frame = CGRect(origin: .zero, size: host.fittingSize)
+            host.layoutSubtreeIfNeeded()
+            let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+            host.cacheDisplay(in: host.bounds, to: rep)
+            let inked = (0 ..< rep.pixelsWide).filter { x in
+                (0 ..< rep.pixelsHigh).contains { y in (rep.colorAt(x: x, y: y)?.brightnessComponent ?? 0) > 0.5 }
+            }
+            let inkWidth = CGFloat((inked.last ?? 0) - (inked.first ?? 0) + 1) * host.bounds.width / CGFloat(rep.pixelsWide)
+            XCTAssertGreaterThanOrEqual(inkWidth, barIconWidth(icon, font: font) - 3, "icon U+\(String(icon.unicodeScalars.first!.value, radix: 16)) is clipped")
         }
     }
 

@@ -111,20 +111,22 @@ struct BarItemView: View {
     }
 }
 
-/// An icon laid out by its whole drawing (not its advance width), so the label beside it never overlaps it
-private struct BarIcon: View {
+/// An icon drawn into an image as wide as its whole drawing. A SwiftUI `Text` clips a Nerd Font glyph to about its
+/// advance width (the right of the CPU chip went missing), and lays the label out over the rest.
+struct BarIcon: View {
     let icon: String
     let config: BarConfig
     let color: Color
 
     var body: some View {
         let font = barIconNSFont(family: config.font, size: CGFloat(config.iconSize))
-        Text(icon)
-            .font(Font(font)) // the same NSFont that was measured
-            .foregroundColor(color)
-            .fixedSize()
-            .offset(x: barIconLeadingInset(icon, font: font))
-            .frame(width: barIconWidth(icon, font: font), alignment: .leading)
+        let nsColor = NSColor(color)
+        let size = NSSize(width: barIconWidth(icon, font: font), height: ceil(font.ascender - font.descender))
+        Image(nsImage: NSImage(size: size, flipped: false) { _ in
+            NSAttributedString(string: icon, attributes: [.font: font, .foregroundColor: nsColor])
+                .draw(at: NSPoint(x: barIconLeadingInset(icon, font: font), y: -font.descender))
+            return true
+        })
     }
 }
 
