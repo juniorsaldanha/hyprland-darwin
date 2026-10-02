@@ -119,8 +119,10 @@ inactive = '0x80414868'                      # single 0xAARRGGBB; default shown
 - `radius` is a tuning knob: window corner radii differ between macOS
   versions and apps.
 - With no `[borders]` section, borders are off. The shipped
-  `docs/config-examples/default-config.toml` gets a `[borders]` section
-  with `enabled = true`, so new installs have borders.
+  `docs/config-examples/default-config.toml` documents the `borders.*` keys
+  with `enabled = false`: AeroSpace's default gaps are 0, and rings drawn
+  outside windows would overlap their neighbours. `hypr init`'s starter
+  config turns borders on, with gaps.
 - Colours use 8 hex digits, `0xAARRGGBB`, with alpha first (same as
   JankyBorders).
 - `gradient(a,b)` takes exactly two colours. Spaces around the comma are

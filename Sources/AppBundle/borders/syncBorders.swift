@@ -9,6 +9,11 @@ import Common
 /// No Accessibility calls: AeroSpace's model + one window-list snapshot.
 @MainActor func syncBorders() {
     let borders = config.borders
+    guard borders.enabled, TrayMenuModel.shared.isEnabled else {
+        // Off (the shipped default) or paused: no window-list snapshot on every move notification
+        overlays.apply([], width: 0, radius: 0, primaryScreenHeight: 0)
+        return
+    }
     let onScreen = onScreenWindows()
     let plan = borderPlan(
         candidates: borderCandidates(),
