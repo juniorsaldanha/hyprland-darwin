@@ -2,8 +2,8 @@
 #   brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprland-darwin
 #   brew install --cask hyprdarwin
 cask "hyprdarwin" do
-  version "0.1.0"
-  sha256 "808eabe53bc2459e99170aa6be1b70ce9ee7b52b156211940940c755a840a7f5"
+  version "0.2.0"
+  sha256 "c027b29adda8b4acf962f0c950c544ac7c7310713d331afa6db0ef7b479c6b86"
 
   url "https://github.com/juniorsaldanha/hyprland-darwin/releases/download/v#{version}/HyprDarwin-#{version}.zip"
   name "HyprDarwin"
@@ -14,11 +14,17 @@ cask "hyprdarwin" do
 
   app "HyprDarwin.app"
   binary "hypr"
+  binary "shell-completion/zsh/_hypr", target: "#{HOMEBREW_PREFIX}/share/zsh/site-functions/_hypr"
+  binary "shell-completion/bash/hypr", target: "#{HOMEBREW_PREFIX}/etc/bash_completion.d/hypr"
+  binary "shell-completion/fish/hypr.fish", target: "#{HOMEBREW_PREFIX}/share/fish/vendor_completions.d/hypr.fish"
 
   # Signed ad hoc (no Apple Developer ID): without this, Gatekeeper refuses to open it
-  postflight do
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/HyprDarwin.app", "#{staged_path}/hypr"]
+  postflight_steps do
+    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/HyprDarwin.app"], must_succeed: false
+    run "/usr/bin/xattr", args: ["-d", "com.apple.quarantine", "{{staged_path}}/hypr"], must_succeed: false
   end
+
+  Dir["#{staged_path}/manpage/*.1"].each { |page| manpage page }
 
   uninstall quit: "dev.hyprdarwin"
 
