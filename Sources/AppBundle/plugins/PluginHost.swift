@@ -6,7 +6,9 @@ import Foundation
     @Published private(set) var statuses: [String: PluginStatus] = [:]
 
     func apply(_ patch: WidgetPatch, to name: String) { widgets[name, default: WidgetState()].apply(patch) }
-    func setStatus(_ status: PluginStatus, for name: String) { statuses[name] = status }
+    func setStatus(_ status: PluginStatus, for name: String) {
+        if statuses[name] != status { statuses[name] = status } // interval plugins report .running after every run
+    }
     func remove(_ name: String) {
         widgets[name] = nil
         statuses[name] = nil

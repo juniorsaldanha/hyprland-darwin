@@ -91,8 +91,12 @@ struct BarItemView: View {
                 .background(RoundedRectangle(cornerRadius: 5).fill(state.background.map { Color(widgetColor($0, fallback: 0)) } ?? .clear))
                 .contentShape(Rectangle())
                 .onTapGesture { clickPlugin(name, state) }
+                .overlay(RightClickCatcher { PluginHost.shared.click(name, button: "right") })
             case .problem(let name, let reason):
                 Text("⚠ \(name)").font(labelFont).foregroundColor(.orange).padding(.horizontal, 5).help(reason)
+                    .contentShape(Rectangle())
+                    // Tooltips need an active app, and HyprDarwin never is: show the reason on click instead
+                    .onTapGesture { showMenu([NSMenuItem(title: "\(name): \(reason)", action: nil, keyEquivalent: "")]) }
         }
     }
 }
@@ -119,6 +123,38 @@ private struct BarIcon: View {
     Task.startUnstructured {
         try await runLightSession(.menuBarButton, token) { _ = Workspace.get(byName: name).focusWorkspace() }
     }
+}
+
+@MainActor private func showMenu(_ items: [NSMenuItem]) {
+    let menu = NSMenu()
+    items.forEach(menu.addItem)
+    menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+}
+
+/// SwiftUI has no right-click gesture on macOS: this view takes right-mouse-down and lets every other click through
+private struct RightClickCatcher: NSViewRepresentable {
+    let action: @MainActor () -> Void
+
+    func makeNSView(context: Context) -> RightClickView { RightClickView(action: action) }
+    func updateNSView(_ view: RightClickView, context: Context) { view.action = action }
+}
+
+final class RightClickView: NSView {
+    var action: @MainActor () -> Void
+
+    init(action: @escaping @MainActor () -> Void) {
+        self.action = action
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        NSApp.currentEvent?.type == .rightMouseDown ? super.hitTest(point) : nil // left clicks fall through to SwiftUI
+    }
+
+    override func rightMouseDown(with event: NSEvent) { action() }
 }
 
 /// Popup items → menu; otherwise a `click` event

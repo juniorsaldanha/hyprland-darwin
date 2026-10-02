@@ -45,7 +45,7 @@ func currentVolumeLevel() -> Int? {
 
 @MainActor private var lastPowerSource: String? = nil
 @MainActor private var lastVolume: Int? = nil
-@MainActor private var volumeDevice: AudioDeviceID? = nil
+@MainActor private var volumeListener: (device: AudioDeviceID, block: AudioObjectPropertyListenerBlock)? = nil
 
 /// Call once at startup. Sends `power` on AC/battery changes and `volume` on output volume changes.
 /// Registration failures are logged once; plugins still run on their intervals.
@@ -54,7 +54,7 @@ func currentVolumeLevel() -> Int? {
     if let source = unsafe IOPSNotificationCreateRunLoopSource({ _ in
         MainActor.assumeIsolated { emitPowerIfChanged() }
     }, nil)?.takeRetainedValue() {
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes) // also while a popup menu is tracking
     } else {
         print("HyprDarwin: power source notifications unavailable")
     }
@@ -75,11 +75,15 @@ func currentVolumeLevel() -> Int? {
 }
 
 @MainActor private func listenToVolume() {
-    guard let device = defaultOutputDevice(), device != volumeDevice else { return }
-    volumeDevice = device
+    let current = unsafe volumeListener?.device
+    guard let device = defaultOutputDevice(), device != current else { return }
     var address = volumeAddress
-    _ = unsafe AudioObjectAddPropertyListenerBlock(device, &address, DispatchQueue.main) { _, _ in
-        MainActor.assumeIsolated { emitVolumeIfChanged() }
+    if let old = unsafe volumeListener { // one listener at a time: switching back to a device must not stack blocks
+        _ = unsafe AudioObjectRemovePropertyListenerBlock(old.device, &address, DispatchQueue.main, old.block)
+    }
+    let block: AudioObjectPropertyListenerBlock = { _, _ in MainActor.assumeIsolated { emitVolumeIfChanged() } }
+    if unsafe AudioObjectAddPropertyListenerBlock(device, &address, DispatchQueue.main, block) == noErr {
+        unsafe volumeListener = (device, block)
     }
 }
 

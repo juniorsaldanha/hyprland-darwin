@@ -64,10 +64,15 @@ import QuartzCore
     }
 }
 
+// periphery:ignore - fields are read by the synthesized ==
 private struct DrawnRing: Equatable {
+    // periphery:ignore
     let spec: BorderSpec
+    // periphery:ignore
     let width: CGFloat
+    // periphery:ignore
     let radius: CGFloat
+    // periphery:ignore
     let primaryScreenHeight: CGFloat
 }
 
