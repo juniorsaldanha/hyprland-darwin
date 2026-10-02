@@ -19,7 +19,7 @@ cask "hyprdarwin" do
   desc "Hyprland-like tiling window manager: tiling, status bar, borders and plugins"
   homepage "https://juniorsaldanha.github.io/hyprland-darwin/"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "HyprDarwin.app"
   binary "hypr"
