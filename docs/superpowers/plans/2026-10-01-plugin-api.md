@@ -499,7 +499,7 @@ final class PluginMessagesTest: XCTestCase {
         assertEquals(decode(#"{"label":"a","future":1}"#), .update(WidgetPatch(strings: ["label": "a"]), ignored: []))
     }
 
-    func testRun() {
+    func testRunCommand() {
         assertEquals(decode(#"{"run":"workspace 2","label":"x"}"#), .run("workspace 2"))
         assertEquals(decode(#"{"run":5}"#), .invalid("'run' must be a string"))
     }
