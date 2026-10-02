@@ -2,8 +2,8 @@
 #   brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprland-darwin
 #   brew install --cask hyprdarwin
 cask "hyprdarwin" do
-  version "0.2.1"
-  sha256 "421474b8cf29635736b49e240a0a415d6bca93a1323faa7e71670f43ea5d19dc"
+  version "0.2.2"
+  sha256 "cdffff9e357cbc445a1347f0439a368506f062101543bae2b1d04b229b9aa912"
 
   url "https://github.com/juniorsaldanha/hyprland-darwin/releases/download/v#{version}/HyprDarwin-#{version}.zip"
   name "HyprDarwin"
