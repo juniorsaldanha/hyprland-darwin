@@ -39,6 +39,7 @@ func barItems(
                 if let status = statuses[name] {
                     switch status {
                         case .missing, .invalid, .stopped: return [.problem(name: name, reason: status.description)]
+                        case .failing where widgets[name] == nil, .restarting where widgets[name] == nil: return [.problem(name: name, reason: status.description)]
                         case .starting, .running, .failing, .restarting: break
                     }
                 }
@@ -68,10 +69,22 @@ struct AutoHideState {
     }
 }
 
-/// The notch: the gap between the two auxiliary top areas (AppKit coordinates). Nil on screens without a notch.
-func notchRect(auxLeft: CGRect?, auxRight: CGRect?) -> CGRect? {
+/// The notch: the gap between the two auxiliary top areas, in global AppKit coordinates. Nil without a notch.
+/// Only the aux rects' sizes are used: their coordinate space isn't documented, the screen frame's is.
+func notchRect(screenFrame: CGRect, auxLeft: CGRect?, auxRight: CGRect?) -> CGRect? {
     guard let auxLeft, let auxRight else { return nil }
-    return CGRect(x: auxLeft.maxX, y: auxLeft.minY, width: auxRight.minX - auxLeft.maxX, height: auxLeft.height)
+    return CGRect(
+        x: screenFrame.minX + auxLeft.width,
+        y: screenFrame.maxY - auxLeft.height,
+        width: screenFrame.width - auxLeft.width - auxRight.width,
+        height: auxLeft.height,
+    )
+}
+
+/// Which screen the cursor is on. Top edge closed, bottom open: at the very top pixel
+/// NSEvent.mouseLocation.y == frame.maxY, which CGRect.contains excludes.
+func screenIndex(containing point: CGPoint, frames: [CGRect]) -> Int? {
+    frames.firstIndex { $0.minX <= point.x && point.x < $0.maxX && $0.minY < point.y && point.y <= $0.maxY }
 }
 
 /// Bar across the top edge of the screen (AppKit coordinates)

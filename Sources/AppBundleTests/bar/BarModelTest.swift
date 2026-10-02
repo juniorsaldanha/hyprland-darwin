@@ -62,8 +62,9 @@ final class BarModelTest: XCTestCase {
     func testNotchRect() {
         let left = CGRect(x: 0, y: 1085, width: 660, height: 32)
         let right = CGRect(x: 852, y: 1085, width: 660, height: 32)
-        assertEquals(notchRect(auxLeft: left, auxRight: right), CGRect(x: 660, y: 1085, width: 192, height: 32))
-        assertNil(notchRect(auxLeft: nil, auxRight: right))
+        let screen = CGRect(x: 0, y: 0, width: 1512, height: 1117)
+        assertEquals(notchRect(screenFrame: screen, auxLeft: left, auxRight: right), CGRect(x: 660, y: 1085, width: 192, height: 32))
+        assertNil(notchRect(screenFrame: screen, auxLeft: nil, auxRight: right))
     }
 
     func testBarFrameAtTopOfScreen() {
@@ -77,5 +78,36 @@ final class BarModelTest: XCTestCase {
         assertEquals(widgetColor("nope", fallback: 0xFF00_0000), nsColor(argb: 0xFF00_0000))
         assertEquals(widgetColor(nil, fallback: 0xFF00_0000), nsColor(argb: 0xFF00_0000))
         assertEquals(widgetColor("0xff00ff00", fallback: 0xFF00_0000), nsColor(argb: 0xFF00_FF00))
+    }
+
+    func testTopEdgePixelBelongsToTheScreen() {
+        // NSEvent.mouseLocation.y == frame.maxY at the very top: CGRect.contains excludes it
+        let frames = [CGRect(x: 0, y: 0, width: 1512, height: 982), CGRect(x: 1512, y: -200, width: 2560, height: 1440)]
+        assertEquals(screenIndex(containing: CGPoint(x: 100, y: 982), frames: frames), 0)
+        assertEquals(screenIndex(containing: CGPoint(x: 2000, y: 1240), frames: frames), 1)
+        assertEquals(screenIndex(containing: CGPoint(x: 100, y: 0), frames: frames), nil) // bottom edge belongs to the screen below
+        assertEquals(screenIndex(containing: CGPoint(x: 9000, y: 10), frames: frames), nil)
+    }
+
+    func testFailingOrRestartingWithoutStateShowsWarning() {
+        let items = barItems(
+            names: ["broken", "flaky", "loop"],
+            workspaces: [], frontApp: nil,
+            widgets: ["flaky": WidgetState(label: "last")],
+            statuses: ["broken": .failing(3), "flaky": .failing(3), "loop": .restarting(in: 2)],
+        )
+        assertEquals(items, [
+            .problem(name: "broken", reason: "failing (3)"),
+            .plugin(name: "flaky", state: WidgetState(label: "last")), // keeps its last good value
+            .problem(name: "loop", reason: "restarting in 2s"),
+        ])
+    }
+
+    func testNotchRectOnAnOffsetBuiltInScreen() {
+        // built-in display left of / below the main one: frame is offset; aux rects only contribute sizes
+        let screen = CGRect(x: -1512, y: -300, width: 1512, height: 982)
+        let left = CGRect(x: 0, y: 950, width: 660, height: 32)
+        let right = CGRect(x: 852, y: 950, width: 660, height: 32)
+        assertEquals(notchRect(screenFrame: screen, auxLeft: left, auxRight: right), CGRect(x: -852, y: 650, width: 192, height: 32))
     }
 }

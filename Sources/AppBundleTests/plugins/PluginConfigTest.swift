@@ -15,6 +15,7 @@ final class PluginConfigTest: XCTestCase {
         let result = parseConfig(
             """
             [bar]
+                enabled = true
                 left = ['workspaces', 'front-app']
                 center = ['music']
                 right = ['clock', 'gpu']
@@ -25,7 +26,7 @@ final class PluginConfigTest: XCTestCase {
             """,
         )
         assertEquals(result.errors, [])
-        assertEquals(result.config.bar, BarConfig(left: ["workspaces", "front-app"], center: ["music"], right: ["clock", "gpu"]))
+        assertEquals(result.config.bar, BarConfig(enabled: true, left: ["workspaces", "front-app"], center: ["music"], right: ["clock", "gpu"]))
         assertEquals(result.config.notch.items, ["music", "timer"])
         assertEquals(result.config.plugins.dirs, ["~/my-plugins"])
     }
@@ -33,6 +34,7 @@ final class PluginConfigTest: XCTestCase {
     func testPlacedPluginNamesDedupesKeepsOrderSkipsBuiltins() {
         let result = parseConfig(
             """
+            bar.enabled = true
             bar.left = ['workspaces', 'gpu']
             bar.right = ['clock', 'front-app', 'gpu']
             notch.items = ['music', 'clock']
@@ -49,5 +51,11 @@ final class PluginConfigTest: XCTestCase {
     func testExpandTilde() {
         assertEquals(expandTilde("~/x"), NSHomeDirectory() + "/x")
         assertEquals(expandTilde("/abs"), "/abs")
+    }
+
+    func testNoPluginsRunWhileTheBarIsDisabled() {
+        // the shipped default config lists bar widgets with bar.enabled = false: nothing may run hidden
+        let result = parseConfig("bar.right = ['cpu', 'gpu']\nnotch.items = ['music']")
+        assertEquals(result.config.placedPluginNames, [])
     }
 }

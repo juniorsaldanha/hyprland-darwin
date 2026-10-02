@@ -28,8 +28,10 @@ func parsePluginsConfig(_ raw: OrderedJson, _ backtrace: ConfigBacktrace, _ c: i
 }
 
 extension Config {
-    /// Plugins to run: everything placed in the bar or notch, deduplicated, in order, minus built-in widgets
+    /// Plugins to run: everything placed in the bar or notch, deduplicated, in order, minus built-in widgets.
+    /// None while the bar is disabled (the notch panel only exists with the bar): nothing polls for nothing.
     var placedPluginNames: [String] {
+        guard bar.enabled else { return [] }
         var seen = Set<String>()
         return (bar.left + bar.center + bar.right + notch.items)
             .filter { !builtinWidgetNames.contains($0) && seen.insert($0).inserted }

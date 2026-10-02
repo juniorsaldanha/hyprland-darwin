@@ -2,6 +2,12 @@ import AppKit
 import Common
 import SwiftUI
 
+/// HyprDarwin is never the active app, so every click lands on an inactive window: take it as a real click,
+/// not an activation click (NSHostingView returns false by default)
+final class BarHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for _: NSEvent?) -> Bool { true }
+}
+
 /// Borderless, non-activating, above windows, on every Space, never key
 final class BarPanel: NSPanel {
     init(frame: CGRect, tint: UInt32, blur: Bool, content: NSView) {
@@ -62,14 +68,14 @@ final class BarPanel: NSPanel {
         autoHideEnabled = config.enabled && config.autoHide
         guard config.enabled else { return }
         for screen in NSScreen.screens {
-            let view = NSHostingView(rootView: BarView(tray: TrayMenuModel.shared, store: PluginHost.shared.store, model: BarModel.shared, config: config))
+            let view = BarHostingView(rootView: BarView(tray: TrayMenuModel.shared, store: PluginHost.shared.store, model: BarModel.shared, config: config))
             let panel = BarPanel(frame: barFrame(screenFrame: screen.frame, height: CGFloat(config.height)), tint: config.color, blur: config.blur, content: view)
             panel.orderFrontRegardless()
             panels.append(panel)
 
-            guard !notch.items.isEmpty, let rect = notchRect(auxLeft: screen.auxiliaryTopLeftArea, auxRight: screen.auxiliaryTopRightArea) else { continue }
+            guard !notch.items.isEmpty, let rect = notchRect(screenFrame: screen.frame, auxLeft: screen.auxiliaryTopLeftArea, auxRight: screen.auxiliaryTopRightArea) else { continue }
             let frame = CGRect(x: rect.minX - 40, y: screen.frame.maxY - rect.height - 32, width: rect.width + 80, height: rect.height + 32)
-            let notchView = NSHostingView(rootView: NotchView(store: PluginHost.shared.store, names: notch.items, config: config))
+            let notchView = BarHostingView(rootView: NotchView(store: PluginHost.shared.store, names: notch.items, config: config))
             let notchPanel = BarPanel(frame: frame, tint: 0, blur: false, content: notchView)
             notchPanel.level = .statusBar + 1
             notchPanels.append((notchPanel, rect))
@@ -92,7 +98,9 @@ final class BarPanel: NSPanel {
     }
 
     private func mouseMoved(_ location: CGPoint) {
-        if autoHideEnabled, let screen = NSScreen.screens.first(where: { $0.frame.contains(location) }) {
+        let screens = NSScreen.screens
+        if autoHideEnabled, let index = screenIndex(containing: location, frames: screens.map(\.frame)) {
+            let screen = screens[index]
             if autoHide.update(distanceFromTop: screen.frame.maxY - location.y) {
                 for panel in panels {
                     panel.alphaValue = autoHide.isHidden ? 0 : 1

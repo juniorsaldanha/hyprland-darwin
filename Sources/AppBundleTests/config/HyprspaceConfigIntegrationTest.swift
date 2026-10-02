@@ -32,6 +32,7 @@ final class HyprspaceConfigIntegrationTest: XCTestCase {
         let result = parseConfig(toml + """
 
             [bar]
+                enabled = true
                 left = ['workspaces', 'front-app']
                 right = ['clock', 'battery', 'cpu', 'ram', 'disk']
             [plugins]

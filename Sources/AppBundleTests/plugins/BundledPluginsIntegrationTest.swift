@@ -50,4 +50,12 @@ final class BundledPluginsIntegrationTest: XCTestCase {
         assertEquals(low["icon"] as? String, "\u{F244}")
         assertEquals(low["icon_color"] as? String, "0xffd20f39")
     }
+
+    func testCpuPluginFinishesWellInsideItsTwoSecondInterval() throws {
+        // interval 2 → timeout 2 s: `top -l 2 -s 1` took ~1.7 s under load and got killed exactly when CPU was high
+        let start = Date()
+        let json = try runOnce("cpu")
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1.4)
+        assertTrue((json["label"] as? String)?.hasSuffix("%") == true)
+    }
 }
