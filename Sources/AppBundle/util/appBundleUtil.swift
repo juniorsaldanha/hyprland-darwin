@@ -8,14 +8,31 @@ let signposter = OSSignposter(subsystem: aeroSpaceAppId, category: .pointsOfInte
 let myPid = NSRunningApplication.current.processIdentifier
 let lockScreenAppBundleId = "com.apple.loginwindow"
 
-func interceptTermination(_ _signal: Int32) {
-    signal(_signal, { (signal: Int32) in
-        check(Thread.current.isMainThread)
-        Task.startUnstructured { @MainActor in
-            terminationHandler?.beforeTermination()
-            exit(signal)
-        }
-    } as sig_t)
+@MainActor private var signalSources: [DispatchSourceSignal] = []
+
+/// Clean shutdown on the main thread. A dispatch source, not a C handler: no async-signal-unsafe work in the handler,
+/// any delivery thread is fine. If the main thread is stuck (hung AX call), `fallback` still ends the process.
+@MainActor func interceptTermination(
+    _ sig: Int32,
+    fallbackAfter: DispatchTimeInterval = .seconds(2),
+    fallback: @escaping @Sendable () -> Void = {},
+    shutdown: @escaping @MainActor () -> Void = {},
+) {
+    signal(sig, SIG_IGN) // else the default action kills us before the source sees it
+    let source = DispatchSource.makeSignalSource(signal: sig, queue: .global())
+    source.setEventHandler { @Sendable in
+        DispatchQueue.global().asyncAfter(deadline: .now() + fallbackAfter, execute: fallback)
+        DispatchQueue.main.async { MainActor.assumeIsolated { shutdown() } }
+    }
+    source.resume()
+    signalSources.append(source)
+}
+
+@MainActor func interceptTermination(_ sig: Int32) {
+    interceptTermination(sig, fallback: { _exit(128 + sig) }) {
+        terminationHandler?.beforeTermination()
+        exit(sig)
+    }
 }
 
 @MainActor
