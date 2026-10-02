@@ -16,6 +16,15 @@
   <a href="#plugins">Plugins</a>
 </p>
 
+<p align="center">
+  <a href="https://juniorsaldanha.github.io/hyprland-darwin/"><img src="site/assets/screenshot.png" alt="HyprDarwin on a 3440×1440 display: Neovim and btop tiled, the status bar, and a gradient border on the focused window" width="100%"></a>
+</p>
+
+<details>
+<summary><b>See it in motion</b></summary>
+<p align="center"><img src="site/assets/demo.gif" alt="HyprDarwin tiling windows and switching workspaces" width="100%"></p>
+</details>
+
 HyprDarwin is a fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) that replaces a whole stack of
 separate tools with one app. You no longer need AeroSpace or Hyprspace plus SketchyBar, JankyBorders and a folder of
 scripts.

@@ -8,6 +8,8 @@
   <meta property="og:title" content="HyprDarwin">
   <meta property="og:description" content="Hyprland for macOS: tiling, a status bar, window borders and plugins in one native app.">
   <meta name="theme-color" content="#07010f">
+  <meta property="og:image" content="https://juniorsaldanha.github.io/hyprland-darwin/assets/screenshot.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,6 +97,32 @@
     h2 { font: 700 clamp(28px, 4.4vw, 46px)/1.1 var(--display); margin: 0 0 10px; letter-spacing: 0.02em; }
     .lead { color: var(--muted); margin: 0 0 36px; max-width: 700px; }
     .label { font: 600 12px var(--mono); color: var(--magenta); letter-spacing: 0.35em; text-transform: uppercase; margin-bottom: 10px; }
+
+    /* ---------- showcase (real screenshots) ---------- */
+    .showcase { position: relative; }
+    .tabs { display: inline-flex; gap: 6px; padding: 5px; margin-bottom: 16px; border-radius: 6px; background: rgba(20, 5, 43, 0.75); border: 1px solid var(--line-soft); }
+    .tabs button {
+      padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; background: transparent; color: var(--muted);
+      font: 700 13px var(--display); letter-spacing: 0.12em; text-transform: uppercase; transition: all 0.2s;
+    }
+    .tabs button.on { color: #0b0216; background: var(--neon); box-shadow: 0 0 18px rgba(255, 43, 214, 0.5); }
+    .frame {
+      position: relative; border-radius: 12px; padding: 3px; overflow: hidden;
+      background: conic-gradient(from var(--angle), var(--magenta), var(--violet), var(--cyan), var(--magenta));
+      animation: rotate-border 6s linear infinite; box-shadow: 0 0 70px rgba(255, 43, 214, 0.35);
+    }
+    .frame .shots { position: relative; border-radius: 10px; overflow: hidden; background: #07010f; aspect-ratio: 3440 / 1440; }
+    .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; transition: opacity 0.6s, transform 6s ease; }
+    .frame img.off { opacity: 0; pointer-events: none; }
+    .frame:hover img { transform: scale(1.03); }
+    .frame .scan { /* a light bar sweeping down the screenshot */
+      position: absolute; left: 0; right: 0; height: 18%; top: -20%; pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(34, 228, 255, 0.12), transparent);
+      animation: scan 5s linear infinite;
+    }
+    @keyframes scan { to { top: 110%; } }
+    .caption { margin-top: 12px; font: 13px var(--mono); color: var(--muted); }
+    .caption b { color: var(--cyan); font-weight: 400; }
 
     /* ---------- live tiling demo ---------- */
     .demo { position: relative; border-radius: 10px; padding: 10px; background: rgba(7, 1, 15, 0.7); border: 1px solid var(--line); box-shadow: 0 0 60px rgba(180, 75, 255, 0.25); }
@@ -207,6 +235,7 @@
   <nav class="topnav">
     <a class="brand" href="./"><img src="icon.svg" alt="">HyprDarwin</a>
     <div class="links">
+      <a class="wide" href="#showcase">Screenshots</a>
       <a class="wide" href="#demo">Demo</a>
       <a class="wide" href="#features">Features</a>
       <a class="wide" href="#install">Install</a>
@@ -236,6 +265,24 @@
     <div class="ticker" aria-hidden="true"><div class="track" id="ticker"></div></div>
 
     <div class="wrap">
+      <section id="showcase" class="reveal showcase">
+        <div class="label">// real desktop</div>
+        <h2>Riced on a <span class="neon-text">real Mac</span></h2>
+        <p class="lead">Neovim and btop tiled side by side, the bar across the top, the neon ring on the focused window. One app, no glue.</p>
+        <div class="tabs" role="tablist">
+          <button type="button" class="on" data-shot="still" role="tab">Screenshot</button>
+          <button type="button" data-shot="motion" role="tab">In motion</button>
+        </div>
+        <div class="frame">
+          <div class="shots">
+            <img data-shot="still" src="assets/screenshot.png" alt="HyprDarwin on a 3440×1440 ultrawide: Neovim and btop tiled, the status bar with workspaces and system widgets, a gradient border on the focused window" loading="lazy">
+            <img data-shot="motion" class="off" data-src="assets/demo.gif" alt="HyprDarwin in motion: windows tiling and switching workspaces">
+            <div class="scan" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="caption"><b>3440×1440</b> · alacritty + neovim + btop · bar: workspaces, front app, disk, ram, gpu, cpu, network, volume, battery, clock · click to open full size</div>
+      </section>
+
       <section id="demo" class="reveal">
         <div class="label">// live demo</div>
         <h2>Watch it <span class="neon-text">tile</span></h2>
@@ -449,6 +496,21 @@ printf <span class="s">'{"icon":"\\uE266","label":"%s%%"}\n'</span> <span class=
         const d = new Date();
         clock.textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
       }, 2000);
+    })();
+
+    // ---------- showcase tabs ----------
+    (() => {
+      const buttons = document.querySelectorAll(".tabs button");
+      const shots = document.querySelectorAll(".frame img");
+      buttons.forEach((b) => b.addEventListener("click", () => {
+        buttons.forEach((x) => x.classList.toggle("on", x === b));
+        shots.forEach((img) => {
+          const on = img.dataset.shot === b.dataset.shot;
+          if (on && img.dataset.src) { img.src = img.dataset.src; delete img.dataset.src; } // the 4.5 MB GIF loads only when asked for
+          img.classList.toggle("off", !on);
+        });
+      }));
+      shots.forEach((img) => img.addEventListener("click", () => open(img.src || img.dataset.src, "_blank")));
     })();
 
     // ---------- 3D tilt cards ----------
