@@ -101,3 +101,22 @@ func nsColor(argb: UInt32) -> NSColor {
 func widgetColor(_ string: String?, fallback: UInt32) -> NSColor {
     nsColor(argb: string.flatMap { try? parseArgb($0).get() } ?? fallback)
 }
+
+/// The bar's icon font: the configured family in bold; the system font when the family isn't available
+func barIconNSFont(family: String, size: CGFloat) -> NSFont {
+    NSFontManager.shared.font(withFamily: family, traits: .boldFontMask, weight: 9, size: size) ?? .boldSystemFont(ofSize: size)
+}
+
+/// Width the bar gives an icon: its whole drawing, not just its advance. Nerd Font icons draw up to ~1.7x wider than
+/// their advance width; laid out by advance (SwiftUI's default), the label after the icon would overlap it.
+func barIconWidth(_ icon: String, font: NSFont) -> CGFloat {
+    let string = NSAttributedString(string: icon, attributes: [.font: font])
+    let ink = string.boundingRect(with: .zero, options: [.usesDeviceMetrics, .usesLineFragmentOrigin])
+    return ceil(max(string.size().width, ink.maxX) - min(0, ink.minX))
+}
+
+/// How far right to shift an icon whose drawing starts left of its origin, so nothing sticks out on the left either
+func barIconLeadingInset(_ icon: String, font: NSFont) -> CGFloat {
+    let ink = NSAttributedString(string: icon, attributes: [.font: font]).boundingRect(with: .zero, options: [.usesDeviceMetrics, .usesLineFragmentOrigin])
+    return max(0, -ink.minX)
+}

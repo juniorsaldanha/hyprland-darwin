@@ -74,14 +74,13 @@ struct BarItemView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { focusWorkspaceFromBar(name) }
             case .chevron:
-                Text("\u{F054}").font(iconFont).foregroundColor(foreground).padding(.leading, 8).padding(.trailing, 4).padding(.horizontal, 5)
+                BarIcon(icon: "\u{F054}", config: config, color: foreground).padding(.leading, 8).padding(.trailing, 4).padding(.horizontal, 5)
             case .frontApp(let name):
                 Text(name).font(labelFont).foregroundColor(foreground).padding(.horizontal, 5)
             case .plugin(let name, let state):
                 HStack(spacing: 0) {
                     if let icon = state.icon, !icon.isEmpty {
-                        Text(icon).font(iconFont)
-                            .foregroundColor(Color(widgetColor(state.iconColor ?? state.color, fallback: config.foreground)))
+                        BarIcon(icon: icon, config: config, color: Color(widgetColor(state.iconColor ?? state.color, fallback: config.foreground)))
                             .padding(.leading, 8).padding(.trailing, 4)
                     }
                     if let label = state.label, !label.isEmpty {
@@ -95,6 +94,23 @@ struct BarItemView: View {
             case .problem(let name, let reason):
                 Text("⚠ \(name)").font(labelFont).foregroundColor(.orange).padding(.horizontal, 5).help(reason)
         }
+    }
+}
+
+/// An icon laid out by its whole drawing (not its advance width), so the label beside it never overlaps it
+private struct BarIcon: View {
+    let icon: String
+    let config: BarConfig
+    let color: Color
+
+    var body: some View {
+        let font = barIconNSFont(family: config.font, size: CGFloat(config.iconSize))
+        Text(icon)
+            .font(Font(font)) // the same NSFont that was measured
+            .foregroundColor(color)
+            .fixedSize()
+            .offset(x: barIconLeadingInset(icon, font: font))
+            .frame(width: barIconWidth(icon, font: font), alignment: .leading)
     }
 }
 
