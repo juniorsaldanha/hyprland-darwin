@@ -54,6 +54,10 @@ struct Main {
             exit(EXIT_CODE_ZERO)
         }
 
+        if args.first == "init" { // local: works without the server
+            exit(runInit(Array(args.dropFirst())))
+        }
+
         let parsedArgs: any CmdArgs
         switch parseCmdArgs(args) {
             // Optimizations

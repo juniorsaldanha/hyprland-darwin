@@ -27,6 +27,27 @@ test -x "$cli" || fail "$cli missing, run ./build-debug.sh first"
 "$cli" --version 2> /dev/null | grep -q "0.0.0-SNAPSHOT" || fail "'$cli --version' doesn't print the snapshot version"
 "$cli" no-such-command > /dev/null 2>&1 && fail "'$cli no-such-command' must exit non-zero"
 
+# hypr init / --undo: throwaway defaults domain + temp config dir (never the real settings)
+init_domain="dev.hyprdarwin.test-init-$$"
+init_home="$(mktemp -d)"
+cleanup_init() { /usr/bin/defaults delete "$init_domain" > /dev/null 2>&1 || true; rm -rf "$init_home"; }
+trap cleanup_init EXIT
+run_init() { HYPR_INIT_TEST_DOMAIN="$init_domain" XDG_CONFIG_HOME="$init_home" "$cli" init "$@" > /dev/null; }
+
+/usr/bin/defaults write "$init_domain" expose-group-apps -bool false # an existing value to restore later
+run_init || fail "'init' failed"
+test -f "$init_home/hyprland-darwin/config.toml" || fail "init didn't write the starter config"
+grep -q '"previous" : false' "$init_home/hyprland-darwin/setup-backup.json" || fail "backup missing the previous value"
+test "$(/usr/bin/defaults read "$init_domain" _HIHideMenuBar)" = 1 || fail "init didn't apply _HIHideMenuBar"
+echo "# mine" > "$init_home/hyprland-darwin/config.toml"
+run_init || fail "second 'init' failed"
+test "$(cat "$init_home/hyprland-darwin/config.toml")" = "# mine" || fail "init overwrote an existing config"
+grep -q '"previous" : false' "$init_home/hyprland-darwin/setup-backup.json" || fail "second init lost the original backup"
+run_init --undo || fail "'init --undo' failed"
+test "$(/usr/bin/defaults read "$init_domain" expose-group-apps)" = 0 || fail "undo didn't restore expose-group-apps"
+/usr/bin/defaults read "$init_domain" _HIHideMenuBar > /dev/null 2>&1 && fail "undo didn't delete a key that was unset"
+test ! -f "$init_home/hyprland-darwin/setup-backup.json" || fail "undo didn't remove the backup"
+
 # App bundle
 if test -n "$app"; then
     test -d "$app" || fail "$app doesn't exist"
