@@ -24,6 +24,7 @@ import Foundation
         GlobalObserver.initObserver()
         startBorders()
         startPlugins()
+        startBar()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces
         _ = Workspace.all.first?.focusWorkspace()
         await runHeavyCompleteRefreshSession(

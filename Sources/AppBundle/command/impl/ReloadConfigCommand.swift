@@ -58,6 +58,7 @@ struct ReloadConfigResult {
         syncFocusFollowsMouse(config)
         syncModifierDrag(config)
         syncPlugins(config)
+        syncBar(config)
         syncConfigFileWatcher()
     }
 
