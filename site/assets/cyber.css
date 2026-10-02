@@ -1,0 +1,148 @@
+/* HyprDarwin site theme: shared by the landing page and the wiki */
+:root {
+  --bg: #07010f;
+  --bg-2: #14052b;
+  --panel: rgba(36, 8, 70, 0.55);
+  --panel-solid: #12042a;
+  --line: rgba(180, 75, 255, 0.35);
+  --line-soft: rgba(180, 75, 255, 0.16);
+  --text: #f0e8ff;
+  --muted: #a996c9;
+  --magenta: #ff2bd6;
+  --violet: #b44bff;
+  --cyan: #22e4ff;
+  --yellow: #f9f871;
+  --neon: linear-gradient(135deg, var(--magenta), var(--violet) 50%, var(--cyan));
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --display: "Orbitron", "Space Grotesk", sans-serif;
+  --sans: "Space Grotesk", system-ui, sans-serif;
+  --nav-h: 60px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.65 var(--sans);
+  overflow-x: hidden;
+}
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-shadow: 0 0 8px rgba(34, 228, 255, 0.7); }
+code, pre, kbd { font-family: var(--mono); }
+::selection { background: var(--magenta); color: #000; }
+
+/* ---------- CRT overlay: scanlines + vignette + flicker ---------- */
+.crt {
+  position: fixed; inset: 0; pointer-events: none; z-index: 90;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.55));
+  animation: flicker 6s infinite steps(1);
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 0.86; }
+  42% { opacity: 1; }
+  77% { opacity: 0.92; }
+  78% { opacity: 1; }
+}
+
+/* ---------- top nav ---------- */
+.topnav {
+  position: sticky; top: 0; z-index: 50; height: var(--nav-h);
+  display: flex; align-items: center; gap: 18px; padding: 0 20px;
+  background: rgba(7, 1, 15, 0.72);
+  backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--line-soft);
+}
+.topnav::after { /* neon underline sweeping across */
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--magenta), var(--cyan), transparent);
+  background-size: 50% 100%; background-repeat: no-repeat;
+  animation: sweep 5s linear infinite;
+}
+@keyframes sweep { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+.topnav .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font: 700 18px var(--display); letter-spacing: 0.04em; }
+.topnav .brand img { width: 30px; height: 30px; filter: drop-shadow(0 0 8px rgba(255, 43, 214, 0.6)); }
+.topnav .links { display: flex; gap: 22px; margin-left: auto; align-items: center; font-size: 15px; }
+.topnav .links a { color: var(--muted); position: relative; }
+.topnav .links a:hover, .topnav .links a.on { color: var(--text); }
+.topnav .links a.on::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--neon);
+  box-shadow: 0 0 8px var(--magenta);
+}
+@media (max-width: 640px) { .topnav .links .wide { display: none; } }
+
+/* ---------- buttons ---------- */
+.btn {
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 4px; font: 700 15px var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text); background: rgba(20, 5, 43, 0.6); border: 1px solid var(--line);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+}
+.btn:hover { transform: translateY(-2px); text-shadow: none; background: rgba(180, 75, 255, 0.25); box-shadow: 0 0 24px rgba(180, 75, 255, 0.45); }
+.btn.primary { background: var(--neon); color: #0b0216; border: none; background-size: 200% 200%; animation: shift 4s ease infinite; }
+.btn.primary:hover { box-shadow: 0 0 32px rgba(255, 43, 214, 0.7); }
+@keyframes shift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* ---------- glitch text ---------- */
+.glitch { position: relative; display: inline-block; }
+.glitch::before, .glitch::after {
+  content: attr(data-text); position: absolute; inset: 0; pointer-events: none;
+  background: inherit; -webkit-background-clip: inherit; background-clip: inherit;
+}
+.glitch::before { color: var(--cyan); -webkit-text-fill-color: var(--cyan); left: 2px; animation: glitch-a 3.2s infinite steps(1, end); mix-blend-mode: screen; }
+.glitch::after { color: var(--magenta); -webkit-text-fill-color: var(--magenta); left: -2px; animation: glitch-b 2.7s infinite steps(1, end); mix-blend-mode: screen; }
+/* Invisible between bursts; steps() so frames jump instead of interpolating a sliver into view */
+@keyframes glitch-a {
+  0% { opacity: 0; }
+  86% { opacity: 1; clip-path: inset(10% 0 70% 0); transform: translate(-4px, 0); }
+  89% { clip-path: inset(55% 0 20% 0); transform: translate(3px, 0); }
+  92% { clip-path: inset(30% 0 50% 0); transform: translate(-2px, 0); }
+  95% { clip-path: inset(80% 0 5% 0); transform: translate(4px, 0); }
+  98% { opacity: 0; }
+}
+@keyframes glitch-b {
+  0% { opacity: 0; }
+  82% { opacity: 1; clip-path: inset(65% 0 10% 0); transform: translate(4px, 0); }
+  86% { clip-path: inset(15% 0 60% 0); transform: translate(-3px, 0); }
+  90% { clip-path: inset(40% 0 40% 0); transform: translate(2px, 0); }
+  94% { opacity: 0; }
+}
+
+/* ---------- neon text helpers ---------- */
+.neon-text { background: var(--neon); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.flicker-text { animation: neon-flicker 4s infinite; }
+@keyframes neon-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { text-shadow: 0 0 6px var(--magenta), 0 0 18px var(--magenta), 0 0 40px var(--violet); opacity: 1; }
+  20%, 24%, 55% { text-shadow: none; opacity: 0.75; }
+}
+
+/* ---------- code ---------- */
+pre.code, .md pre {
+  margin: 0; padding: 18px 20px; border-radius: 6px; overflow-x: auto; font-size: 13.5px; line-height: 1.65;
+  background: rgba(7, 1, 15, 0.85); border: 1px solid var(--line-soft); border-left: 3px solid var(--magenta);
+  box-shadow: inset 0 0 30px rgba(180, 75, 255, 0.08);
+}
+kbd {
+  font: 600 12.5px var(--mono); padding: 2px 7px; border-radius: 4px; color: var(--text);
+  background: rgba(180, 75, 255, 0.18); border: 1px solid var(--line); box-shadow: 0 2px 0 rgba(180, 75, 255, 0.35);
+}
+
+/* ---------- scroll reveal ---------- */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.reveal.in { opacity: 1; transform: none; }
+
+footer.site {
+  position: relative; z-index: 2; margin-top: 96px; padding: 32px 20px 48px; border-top: 1px solid var(--line-soft);
+  color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1; transform: none; }
+  .glitch::before, .glitch::after { display: none; } /* unclipped, they would tint the whole title */
+}

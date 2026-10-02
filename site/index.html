@@ -4,327 +4,521 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HyprDarwin</title>
-  <meta name="description" content="Hyprland for macOS: tiling, a status bar, window borders and plugins in one app.">
+  <meta name="description" content="Hyprland for macOS: tiling, a status bar, window borders and plugins in one native app.">
   <meta property="og:title" content="HyprDarwin">
-  <meta property="og:description" content="Hyprland for macOS: tiling, a status bar, window borders and plugins in one app.">
+  <meta property="og:description" content="Hyprland for macOS: tiling, a status bar, window borders and plugins in one native app.">
+  <meta name="theme-color" content="#07010f">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/cyber.css">
   <style>
-    :root {
-      --bg: #0b0216;
-      --bg-2: #14052b;
-      --panel: rgba(42, 10, 79, 0.55);
-      --line: rgba(180, 75, 255, 0.35);
-      --text: #ece4ff;
-      --muted: #a996c9;
-      --magenta: #ff2bd6;
-      --violet: #b44bff;
-      --cyan: #22e4ff;
-      --neon: linear-gradient(135deg, var(--magenta), var(--violet) 50%, var(--cyan));
+    /* ---------- background layers ---------- */
+    #rain { position: fixed; inset: 0; z-index: 0; opacity: 0.22; pointer-events: none; }
+    .glow-cursor {
+      position: fixed; z-index: 1; width: 520px; height: 520px; margin: -260px 0 0 -260px; pointer-events: none;
+      background: radial-gradient(circle, rgba(180, 75, 255, 0.16), transparent 60%);
+      transition: transform 0.12s linear; left: 0; top: 0;
     }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 17px/1.6 "Space Grotesk", system-ui, sans-serif;
-      overflow-x: hidden;
-    }
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+    main { position: relative; z-index: 2; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
 
-    /* background: haze + synthwave floor */
-    .sky {
-      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    /* ---------- hero ---------- */
+    .hero { position: relative; min-height: calc(100vh - var(--nav-h)); display: grid; place-items: center; text-align: center; overflow: hidden; padding: 40px 0 120px; }
+    .horizon { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+    .horizon::before { /* sky */
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(70% 55% at 50% 62%, rgba(255, 43, 214, 0.35), transparent 70%),
+                  linear-gradient(180deg, #07010f 0%, #1b0636 55%, #2a0a4f 62%, #07010f 63%);
+    }
+    .sun {
+      position: absolute; left: 50%; top: 62%; width: min(46vw, 420px); aspect-ratio: 1; transform: translate(-50%, -78%);
+      border-radius: 50%;
+      background: linear-gradient(180deg, var(--yellow) 0%, #ff8a3d 35%, var(--magenta) 75%, var(--violet) 100%);
+      -webkit-mask: repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px) bottom / 100% 55% no-repeat, linear-gradient(#000, #000) top / 100% 46% no-repeat;
+      mask: repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px) bottom / 100% 55% no-repeat, linear-gradient(#000, #000) top / 100% 46% no-repeat;
+      filter: drop-shadow(0 0 60px rgba(255, 43, 214, 0.65));
+      animation: sun-pulse 6s ease-in-out infinite;
+    }
+    @keyframes sun-pulse { 50% { filter: drop-shadow(0 0 90px rgba(255, 43, 214, 0.9)); } }
+    .floor {
+      position: absolute; left: -50%; right: -50%; top: 62%; bottom: -10%;
       background:
-        radial-gradient(60% 45% at 50% 35%, rgba(176, 38, 255, 0.35), transparent 70%),
-        linear-gradient(180deg, #2a0a4f 0%, var(--bg-2) 45%, var(--bg) 100%);
+        linear-gradient(90deg, rgba(255, 43, 214, 0.75) 2px, transparent 2px) 0 0 / 80px 80px,
+        linear-gradient(0deg, rgba(255, 43, 214, 0.75) 2px, transparent 2px) 0 0 / 80px 80px;
+      transform: perspective(280px) rotateX(62deg); transform-origin: top;
+      animation: drive 1.4s linear infinite;
+      -webkit-mask: linear-gradient(180deg, transparent, #000 25%); mask: linear-gradient(180deg, transparent, #000 25%);
+      filter: drop-shadow(0 0 6px var(--magenta));
     }
-    .sky::after {
-      content: ""; position: absolute; left: -50%; right: -50%; bottom: 0; height: 45vh;
-      background:
-        repeating-linear-gradient(90deg, rgba(255, 43, 214, 0.35) 0 2px, transparent 2px 80px),
-        repeating-linear-gradient(0deg, rgba(255, 43, 214, 0.35) 0 2px, transparent 2px 60px);
-      transform: perspective(300px) rotateX(60deg);
-      transform-origin: bottom;
-      mask-image: linear-gradient(to top, black, transparent);
-      -webkit-mask-image: linear-gradient(to top, black, transparent);
-      opacity: 0.6;
+    @keyframes drive { to { background-position: 0 80px, 0 80px; } }
+
+    .hero-inner { position: relative; padding: 0 16px; }
+    .hero-inner::before { /* dark halo so the text reads over the sun */
+      content: ""; position: absolute; z-index: -1; left: 50%; top: 58%; width: min(900px, 110vw); height: 340px; transform: translate(-50%, -50%);
+      background: radial-gradient(closest-side, rgba(7, 1, 15, 0.82), rgba(7, 1, 15, 0.5) 60%, transparent);
     }
-
-    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
-    nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); }
-    nav .brand img { width: 32px; height: 32px; }
-    nav .links { display: flex; gap: 20px; font-size: 15px; }
-    nav .links a { color: var(--muted); }
-    @media (max-width: 560px) { nav .links a:not(:last-child) { display: none; } }
-
-    header.hero { text-align: center; padding: 56px 0 40px; }
-    .hero img.logo { width: 168px; height: 168px; filter: drop-shadow(0 0 40px rgba(255, 43, 214, 0.45)); }
-    h1 {
-      font-size: clamp(44px, 8vw, 84px); line-height: 1; margin: 16px 0 12px; letter-spacing: -0.03em;
+    .hero-inner p, .kicker { text-shadow: 0 0 4px #07010f, 0 2px 14px #07010f; }
+    .logo-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 8px; animation: float 6s ease-in-out infinite; }
+    .logo-wrap img { width: 100%; height: 100%; filter: drop-shadow(0 0 30px rgba(255, 43, 214, 0.6)); }
+    .logo-wrap::after { /* orbit ring */
+      content: ""; position: absolute; inset: -14px; border-radius: 50%; border: 2px dashed rgba(34, 228, 255, 0.45);
+      animation: spin 18s linear infinite;
+    }
+    @keyframes float { 50% { transform: translateY(-12px); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1.title {
+      margin: 10px 0 6px; font: 900 clamp(40px, 10vw, 112px)/1 var(--display); letter-spacing: 0.02em;
       background: var(--neon); -webkit-background-clip: text; background-clip: text; color: transparent;
+      background-size: 200% 100%; animation: shift 6s ease infinite;
+      filter: drop-shadow(0 0 24px rgba(255, 43, 214, 0.45));
     }
-    .tagline { font-size: clamp(18px, 2.6vw, 22px); color: var(--muted); max-width: 640px; margin: 0 auto 28px; }
+    .kicker { font: 600 13px var(--mono); letter-spacing: 0.4em; color: var(--cyan); text-transform: uppercase; }
+    .tagline { font-size: clamp(19px, 2.8vw, 26px); color: var(--text); margin: 14px 0 6px; min-height: 1.6em; }
+    .tagline .typed { color: var(--cyan); font-family: var(--mono); border-right: 2px solid var(--cyan); padding-right: 4px; animation: caret 0.8s steps(1) infinite; }
+    @keyframes caret { 50% { border-color: transparent; } }
+    .sub { color: #cfc2ea; max-width: 620px; margin: 0 auto 30px; }
+    .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .scroll-hint { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); font: 12px var(--mono); color: var(--muted); letter-spacing: 0.3em; animation: bob 2s ease-in-out infinite; }
+    @keyframes bob { 50% { transform: translate(-50%, 8px); opacity: 0.5; } }
 
-    .install {
-      display: inline-flex; align-items: center; gap: 12px; max-width: 100%;
-      padding: 12px 14px 12px 18px; border-radius: 14px;
-      background: rgba(11, 2, 22, 0.8); border: 1px solid var(--line);
-      box-shadow: 0 0 30px rgba(180, 75, 255, 0.25);
-    }
-    .install pre { margin: 0; min-width: 0; text-align: left; font-size: 14px; overflow-x: auto; color: var(--text); }
-    .install pre .p { color: var(--magenta); user-select: none; }
-    button.copy {
-      flex: none; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--cyan);
-      border-radius: 8px; padding: 6px 10px; font: 600 13px "Space Grotesk", sans-serif;
-    }
-    button.copy:hover { background: rgba(34, 228, 255, 0.1); }
-    .cta { margin-top: 22px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      display: inline-block; padding: 11px 22px; border-radius: 12px; font-weight: 600; color: var(--text);
-      border: 1px solid var(--line); background: var(--panel);
-    }
-    .btn.primary { background: var(--neon); color: #12042a; border: none; }
-    .btn:hover { text-decoration: none; filter: brightness(1.1); }
+    /* ---------- ticker ---------- */
+    .ticker { position: relative; overflow: hidden; border-block: 1px solid var(--line); background: rgba(20, 5, 43, 0.7); transform: skewY(-2deg); margin: -40px 0 40px; }
+    .ticker .track { display: flex; width: max-content; animation: marquee 28s linear infinite; }
+    .ticker span { padding: 14px 26px; font: 700 15px var(--display); letter-spacing: 0.25em; white-space: nowrap; color: var(--text); }
+    .ticker span:nth-child(3n+1) { color: var(--magenta); }
+    .ticker span:nth-child(3n+2) { color: var(--cyan); }
+    @keyframes marquee { to { transform: translateX(-50%); } }
 
-    /* bar mockup */
-    .bar {
-      margin: 56px auto 0; max-width: 960px; height: 44px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px;
-      background: rgba(20, 5, 43, 0.75); border: 1px solid var(--line);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      font: 700 14px "JetBrains Mono", monospace; overflow: hidden; white-space: nowrap;
-    }
-    .bar .side { display: flex; align-items: center; gap: 4px; min-width: 0; }
-    .bar .ws { padding: 3px 9px; border-radius: 6px; color: var(--muted); }
-    .bar .ws.on { color: var(--text); background: rgba(255, 255, 255, 0.18); box-shadow: 0 0 12px rgba(255, 43, 214, 0.5); }
-    .bar .app { color: var(--text); margin-left: 8px; }
-    .bar .w { color: var(--text); margin-left: 14px; }
-    .bar .w i { font-style: normal; color: var(--violet); margin-right: 6px; }
-    @media (max-width: 720px) { .bar .hide-sm { display: none; } }
+    section { padding: 90px 0 0; }
+    h2 { font: 700 clamp(28px, 4.4vw, 46px)/1.1 var(--display); margin: 0 0 10px; letter-spacing: 0.02em; }
+    .lead { color: var(--muted); margin: 0 0 36px; max-width: 700px; }
+    .label { font: 600 12px var(--mono); color: var(--magenta); letter-spacing: 0.35em; text-transform: uppercase; margin-bottom: 10px; }
 
-    /* tiled windows mockup */
-    .desk {
-      max-width: 960px; margin: 12px auto 0; display: grid; gap: 12px; height: 300px;
-      grid-template-columns: 1.2fr 1fr; grid-template-rows: 1fr 1fr;
+    /* ---------- live tiling demo ---------- */
+    .demo { position: relative; border-radius: 10px; padding: 10px; background: rgba(7, 1, 15, 0.7); border: 1px solid var(--line); box-shadow: 0 0 60px rgba(180, 75, 255, 0.25); }
+    .demo .bar {
+      height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; margin-bottom: 8px;
+      border-radius: 6px; background: rgba(20, 5, 43, 0.85); font: 700 13px var(--mono); white-space: nowrap; overflow: hidden;
     }
+    .demo .pills { display: flex; gap: 4px; }
+    .demo .pill { padding: 2px 9px; border-radius: 4px; color: var(--muted); transition: all 0.35s; }
+    .demo .pill.on { color: var(--text); background: rgba(255, 255, 255, 0.16); box-shadow: 0 0 14px rgba(255, 43, 214, 0.7); }
+    .demo .widgets { display: flex; gap: 14px; color: var(--text); }
+    .demo .widgets i { font-style: normal; color: var(--violet); margin-right: 5px; }
+    .demo .stage { position: relative; height: clamp(260px, 42vw, 420px); overflow: hidden; }
     .win {
-      border-radius: 12px; background: rgba(18, 4, 42, 0.8); position: relative; padding: 14px 16px;
-      border: 3px solid rgba(65, 72, 104, 0.6); font: 13px/1.6 "JetBrains Mono", monospace; color: var(--muted);
-      overflow: hidden; text-align: left;
+      position: absolute; border-radius: 8px; padding: 12px 14px; overflow: hidden;
+      background: rgba(18, 4, 42, 0.92); border: 2px solid rgba(65, 72, 104, 0.7);
+      font: 12.5px/1.6 var(--mono); color: var(--muted);
+      transition: left 0.6s cubic-bezier(0.2, 0.9, 0.2, 1), top 0.6s cubic-bezier(0.2, 0.9, 0.2, 1),
+                  width 0.6s cubic-bezier(0.2, 0.9, 0.2, 1), height 0.6s cubic-bezier(0.2, 0.9, 0.2, 1),
+                  opacity 0.4s, transform 0.4s, border-color 0.3s;
     }
-    .win.focused { grid-row: span 2; border: 3px solid transparent;
-      background: linear-gradient(rgba(18, 4, 42, 0.92), rgba(18, 4, 42, 0.92)) padding-box, var(--neon) border-box;
-      box-shadow: 0 0 28px rgba(255, 43, 214, 0.35);
+    .win.hidden { opacity: 0; transform: scale(0.85); }
+    .win .t { color: var(--text); font-weight: 700; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+    .win .t b { width: 9px; height: 9px; border-radius: 50%; background: #3a2a5a; display: inline-block; }
+    .win .k { color: var(--magenta); } .win .s { color: var(--cyan); } .win .y { color: var(--yellow); }
+    @property --angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    .win.focus { border-color: transparent; box-shadow: 0 0 30px rgba(255, 43, 214, 0.45); }
+    .win.focus::before {
+      content: ""; position: absolute; inset: -2px; border-radius: 8px; padding: 2px; pointer-events: none;
+      background: conic-gradient(from var(--angle), var(--magenta), var(--violet), var(--cyan), var(--magenta));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+      animation: rotate-border 3s linear infinite;
     }
-    .win .k { color: var(--magenta); }
-    .win .s { color: var(--cyan); }
-    @media (max-width: 640px) { .desk { height: auto; grid-template-columns: 1fr; } .win.focused { grid-row: auto; } }
+    @keyframes rotate-border { to { --angle: 360deg; } }
+    .keys { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 14px; min-height: 34px; font: 13px var(--mono); color: var(--muted); }
+    .keys .combo { display: inline-flex; gap: 4px; animation: pop 0.35s ease; }
+    @keyframes pop { from { transform: scale(1.4); opacity: 0; } }
 
-    section { padding: 80px 0 0; }
-    h2 { font-size: clamp(28px, 4vw, 40px); margin: 0 0 8px; letter-spacing: -0.02em; }
-    .lead { color: var(--muted); margin: 0 0 32px; max-width: 680px; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    /* ---------- feature cards ---------- */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
     .card {
-      padding: 22px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line);
-      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; padding: 26px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line-soft);
+      transform-style: preserve-3d; transition: transform 0.15s ease-out, box-shadow 0.3s, border-color 0.3s; will-change: transform;
     }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 0 30px rgba(180, 75, 255, 0.3); }
-    .card .ico { font-size: 26px; }
-    .card h3 { margin: 8px 0 6px; font-size: 19px; }
-    .card p { margin: 0; color: var(--muted); font-size: 15px; }
-
-    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .split > * { min-width: 0; } /* code scrolls instead of widening the page */
-    @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
-    pre.code {
-      margin: 0; padding: 18px 20px; border-radius: 14px; overflow-x: auto; font-size: 13.5px; line-height: 1.65;
-      background: rgba(11, 2, 22, 0.85); border: 1px solid var(--line);
+    .card:hover { border-color: var(--line); box-shadow: 0 0 40px rgba(180, 75, 255, 0.35); }
+    .card::after { /* corner accent */
+      content: ""; position: absolute; top: -1px; right: -1px; width: 26px; height: 26px;
+      border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan); border-top-right-radius: 8px;
     }
-    pre.code .c { color: #6f5d93; }
-    pre.code .k { color: var(--magenta); }
-    pre.code .s { color: var(--cyan); }
-    .label { font: 600 13px "Space Grotesk"; color: var(--violet); text-transform: uppercase; letter-spacing: 0.12em; margin: 0 0 8px; }
+    .card .ico { font-size: 30px; display: inline-block; filter: drop-shadow(0 0 10px rgba(255, 43, 214, 0.6)); transform: translateZ(30px); }
+    .card h3 { font: 700 19px var(--display); margin: 12px 0 8px; letter-spacing: 0.04em; transform: translateZ(20px); }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; transform: translateZ(10px); }
 
-    table.keys { width: 100%; border-collapse: collapse; font-size: 15px; }
-    table.keys td { padding: 9px 4px; border-bottom: 1px solid rgba(180, 75, 255, 0.18); }
-    table.keys td:first-child { white-space: nowrap; padding-right: 16px; }
-    kbd {
-      font: 600 12.5px "JetBrains Mono", monospace; padding: 2px 7px; border-radius: 6px; color: var(--text);
-      background: rgba(180, 75, 255, 0.18); border: 1px solid var(--line);
+    /* ---------- stack merge ---------- */
+    .merge { display: grid; grid-template-columns: 1fr auto 1fr; gap: 28px; align-items: center; }
+    .stack { display: grid; gap: 10px; }
+    .chip {
+      padding: 12px 16px; border-radius: 6px; border: 1px dashed rgba(169, 150, 201, 0.4); color: var(--muted);
+      font: 600 15px var(--mono); text-decoration: line-through; text-decoration-color: var(--magenta);
     }
+    .merge.in .chip { animation: suck 1.2s ease forwards; }
+    .merge.in .chip:nth-child(2) { animation-delay: 0.15s; } .merge.in .chip:nth-child(3) { animation-delay: 0.3s; }
+    .merge.in .chip:nth-child(4) { animation-delay: 0.45s; } .merge.in .chip:nth-child(5) { animation-delay: 0.6s; }
+    @keyframes suck { 60% { transform: translateX(30px) scale(0.92); opacity: 0.5; } 100% { transform: translateX(0) scale(1); opacity: 0.45; } }
+    .arrow { font: 900 44px var(--display); color: var(--cyan); text-shadow: 0 0 20px var(--cyan); animation: nudge 1.6s ease-in-out infinite; }
+    @keyframes nudge { 50% { transform: translateX(10px); } }
+    .one {
+      padding: 28px; border-radius: 10px; text-align: center; background: var(--panel); border: 1px solid var(--line);
+      box-shadow: 0 0 50px rgba(255, 43, 214, 0.3);
+    }
+    .one img { width: 86px; height: 86px; }
+    .one b { display: block; font: 900 26px var(--display); margin-top: 8px; }
+    @media (max-width: 760px) { .merge { grid-template-columns: 1fr; } .arrow { transform: rotate(90deg); justify-self: center; animation: none; } }
 
-    ol.steps { padding-left: 20px; color: var(--muted); }
-    ol.steps li { margin-bottom: 10px; }
-    ol.steps code { color: var(--text); }
+    /* ---------- terminal ---------- */
+    .term { border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: rgba(7, 1, 15, 0.92); box-shadow: 0 0 50px rgba(34, 228, 255, 0.15); }
+    .term .head { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: rgba(36, 8, 70, 0.8); font: 12px var(--mono); color: var(--muted); }
+    .term .head i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+    .term .head i:nth-child(1) { background: #ff5f87; } .term .head i:nth-child(2) { background: #f9f871; } .term .head i:nth-child(3) { background: #22e4ff; }
+    .term .head span { margin-left: auto; }
+    .term pre { margin: 0; padding: 18px 20px; min-height: 230px; font: 14px/1.75 var(--mono); white-space: pre-wrap; word-break: break-all; color: var(--text); }
+    .term .p { color: var(--magenta); } .term .ok { color: var(--cyan); } .term .dim { color: var(--muted); }
+    .term .cur { display: inline-block; width: 9px; height: 1.1em; vertical-align: -0.15em; background: var(--cyan); animation: caret 0.9s steps(1) infinite; }
+    .term-actions { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
 
-    footer { margin-top: 96px; padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
-    footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .split > * { min-width: 0; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+    pre.code .c { color: #6f5d93; } pre.code .k { color: var(--magenta); } pre.code .s { color: var(--cyan); }
+
+    .wiki-cta {
+      position: relative; margin-top: 30px; padding: 46px 30px; border-radius: 12px; text-align: center; overflow: hidden;
+      background: linear-gradient(135deg, rgba(255, 43, 214, 0.18), rgba(34, 228, 255, 0.12)); border: 1px solid var(--line);
+    }
+    .wiki-cta::before { /* light sweep */
+      content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -40%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent); transform: skewX(-20deg);
+      animation: shine 4.5s ease-in-out infinite;
+    }
+    @keyframes shine { 60%, 100% { left: 130%; } }
+    .wiki-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
   </style>
 </head>
 <body>
-  <div class="sky"></div>
+  <canvas id="rain" aria-hidden="true"></canvas>
+  <div class="glow-cursor" aria-hidden="true"></div>
+  <div class="crt" aria-hidden="true"></div>
 
-  <div class="wrap">
-    <nav>
-      <a class="brand" href="#"><img src="icon.svg" alt="">HyprDarwin</a>
-      <div class="links">
-        <a href="#features">Features</a>
-        <a href="#config">Config</a>
-        <a href="#plugins">Plugins</a>
-        <a href="https://github.com/juniorsaldanha/hyprland-darwin">GitHub</a>
-      </div>
-    </nav>
+  <nav class="topnav">
+    <a class="brand" href="./"><img src="icon.svg" alt="">HyprDarwin</a>
+    <div class="links">
+      <a class="wide" href="#demo">Demo</a>
+      <a class="wide" href="#features">Features</a>
+      <a class="wide" href="#install">Install</a>
+      <a href="wiki/">Wiki</a>
+      <a href="https://github.com/juniorsaldanha/hyprland-darwin">GitHub</a>
+    </div>
+  </nav>
 
+  <main>
     <header class="hero">
-      <img class="logo" src="icon.svg" alt="HyprDarwin icon">
-      <h1>HyprDarwin</h1>
-      <p class="tagline">Hyprland for macOS: tiling, a status bar, window borders and plugins, all in one native app.</p>
-      <div class="install">
-        <pre id="brew"><span class="p">$ </span>brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprland-darwin
-<span class="p">$ </span>brew install --cask hyprdarwin</pre>
-        <button class="copy" type="button" data-copy="brew">Copy</button>
-      </div>
-      <div class="cta">
-        <a class="btn primary" href="https://github.com/juniorsaldanha/hyprland-darwin/releases/latest">Download</a>
-        <a class="btn" href="https://github.com/juniorsaldanha/hyprland-darwin">View on GitHub</a>
-      </div>
-
-      <div class="bar" aria-hidden="true">
-        <div class="side">
-          <span class="ws">1</span><span class="ws on">2</span><span class="ws">3</span><span class="ws">4</span><span class="ws">9</span>
-          <span class="ws hide-sm">›</span><span class="app hide-sm">Terminal</span>
-        </div>
-        <div class="side">
-          <span class="w hide-sm"><i>▣</i>12%</span>
-          <span class="w hide-sm"><i>▤</i>42%</span>
-          <span class="w"><i>◉</i>80%</span>
-          <span class="w"><i>◷</i>21:04</span>
+      <div class="horizon" aria-hidden="true"><div class="sun"></div><div class="floor"></div></div>
+      <div class="hero-inner">
+        <div class="logo-wrap"><img src="icon.svg" alt="HyprDarwin icon"></div>
+        <div class="kicker">// tiling window manager for macOS</div>
+        <h1 class="title glitch" data-text="HYPRDARWIN">HYPRDARWIN</h1>
+        <p class="tagline">Hyprland, but for your Mac: <span class="typed" id="typed">tiling</span></p>
+        <p class="sub">Tiling, a status bar, glowing window borders and a plugin system, in one native app. No SIP changes, no glue scripts.</p>
+        <div class="cta">
+          <a class="btn primary" href="#install">Install</a>
+          <a class="btn" href="wiki/#/getting-started/master-tutorial">Master tutorial</a>
+          <a class="btn" href="https://github.com/juniorsaldanha/hyprland-darwin">GitHub</a>
         </div>
       </div>
-      <div class="desk" aria-hidden="true">
-        <div class="win focused"><span class="k">~</span> hypr workspace 2<br><span class="k">~</span> hypr list-plugins<br>cpu | interval | running | 0 | 12%<br>clock | interval | running | 0 | 21:04<br><span class="k">~</span> <span class="s">▌</span></div>
-        <div class="win">[borders]<br>active = 'gradient(…)'<br>width = 5</div>
-        <div class="win">[bar]<br>workspaces = 'visible'<br>auto-hide = true</div>
-      </div>
+      <div class="scroll-hint">SCROLL ▾</div>
     </header>
 
-    <section id="features">
-      <h2>One app instead of five</h2>
-      <p class="lead">It forks AeroSpace and builds in what used to need SketchyBar, JankyBorders and a folder of scripts.</p>
-      <div class="grid">
-        <div class="card"><div class="ico">⊞</div><h3>Tiling</h3><p>AeroSpace's tree tiling, virtual workspaces and real multi-monitor support. No need to disable SIP.</p></div>
-        <div class="card"><div class="ico">▭</div><h3>Status bar</h3><p>One bar per screen with workspace pills, the front app and system widgets. Auto-hide, and a notch panel.</p></div>
-        <div class="card"><div class="ico">◈</div><h3>Borders</h3><p>A gradient ring around the focused window and a dim ring around the rest. Matches JankyBorders.</p></div>
-        <div class="card"><div class="ico">⚡</div><h3>Plugins</h3><p>Any executable speaking JSON lines can be a widget, react to events or run commands.</p></div>
-        <div class="card"><div class="ico">🖱</div><h3>Mouse</h3><p>Focus follows the mouse, and <kbd>alt</kbd> + drag moves a window, like Hyprland.</p></div>
-        <div class="card"><div class="ico">✦</div><h3>One-command setup</h3><p><code>hypr init</code> applies the macOS settings it needs, keeps a backup with undo, and writes a starter config.</p></div>
-      </div>
-    </section>
+    <div class="ticker" aria-hidden="true"><div class="track" id="ticker"></div></div>
 
-    <section id="start">
-      <h2>Get started</h2>
-      <p class="lead">From install to tiling in a minute.</p>
-      <div class="split">
-        <ol class="steps">
-          <li>Install with Homebrew (above), or build it: <code>make app-install</code>.</li>
-          <li>Run <code>hypr init</code>. It sets up macOS and writes <code>~/.config/hyprland-darwin/config.toml</code>.</li>
-          <li>Open HyprDarwin and grant Accessibility when the Permissions window asks.</li>
-          <li>Press <kbd>alt</kbd> <kbd>enter</kbd> and start tiling.</li>
-        </ol>
-        <table class="keys">
-          <tr><td><kbd>alt</kbd> <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>Focus a window</td></tr>
-          <tr><td><kbd>alt</kbd> <kbd>shift</kbd> <kbd>h</kbd><kbd>j</kbd><kbd>k</kbd><kbd>l</kbd></td><td>Move a window</td></tr>
-          <tr><td><kbd>alt</kbd> <kbd>1</kbd>…<kbd>0</kbd></td><td>Go to a workspace</td></tr>
-          <tr><td><kbd>alt</kbd> <kbd>shift</kbd> <kbd>1</kbd>…<kbd>0</kbd></td><td>Send a window to a workspace</td></tr>
-          <tr><td><kbd>alt</kbd> <kbd>f</kbd> / <kbd>v</kbd></td><td>Fullscreen / floating</td></tr>
-          <tr><td><kbd>alt</kbd> <kbd>r</kbd></td><td>Resize mode</td></tr>
-          <tr><td><kbd>alt</kbd> + drag</td><td>Move a window with the mouse</td></tr>
-        </table>
-      </div>
-    </section>
+    <div class="wrap">
+      <section id="demo" class="reveal">
+        <div class="label">// live demo</div>
+        <h2>Watch it <span class="neon-text">tile</span></h2>
+        <p class="lead">Every new window takes its share of the screen. Focus moves with the keyboard, and the focused window wears the neon.</p>
+        <div class="demo">
+          <div class="bar">
+            <div class="pills" id="pills"><span class="pill on">1</span><span class="pill">2</span><span class="pill">3</span><span class="pill">4</span></div>
+            <div class="widgets"><span><i>▣</i><span id="cpu">12</span>%</span><span><i>▤</i>42%</span><span><i>◷</i><span id="clock">21:04</span></span></div>
+          </div>
+          <div class="stage" id="stage">
+            <div class="win" data-id="a"><div class="t"><b></b><b></b><b></b> ~ zsh</div><span class="k">❯</span> hypr list-workspaces --all<br>1 2 3 4 9<br><span class="k">❯</span> hypr list-plugins<br>cpu | interval | <span class="s">running</span> | 0 | 12%<br>clock | interval | <span class="s">running</span> | 0 | 21:04<br><span class="k">❯</span> <span class="s">▌</span></div>
+            <div class="win hidden" data-id="b"><div class="t"><b></b><b></b><b></b> config.toml</div><span class="y">[bar]</span><br>enabled = <span class="s">true</span><br>workspaces = <span class="s">'visible'</span><br><br><span class="y">[borders]</span><br>active = <span class="s">'gradient(…)'</span></div>
+            <div class="win hidden" data-id="c"><div class="t"><b></b><b></b><b></b> btop</div>cpu  ▁▂▃▅▇▅▃▂▁▂▃<br>mem  ▃▃▄▄▅▅▅▄▄▃▃<br>net  ▁▁▂▁▇▂▁▁▂▁▁</div>
+            <div class="win hidden" data-id="d"><div class="t"><b></b><b></b><b></b> Safari</div>github.com/juniorsaldanha/<br>hyprland-darwin<br><br><span class="s">★ Star</span></div>
+          </div>
+        </div>
+        <div class="keys" id="keys"></div>
+      </section>
 
-    <section id="config">
-      <h2>Plain-text config</h2>
-      <p class="lead">AeroSpace's TOML plus <code>[bar]</code>, <code>[borders]</code> and <code>[notch]</code>. It reloads when you save.</p>
-      <pre class="code"><span class="k">[bar]</span>
-    enabled = <span class="s">true</span>
-    left  = [<span class="s">'workspaces'</span>, <span class="s">'chevron'</span>, <span class="s">'front-app'</span>]
-    right = [<span class="s">'cpu'</span>, <span class="s">'ram'</span>, <span class="s">'network'</span>, <span class="s">'volume'</span>, <span class="s">'battery'</span>, <span class="s">'clock'</span>]
-    workspaces = <span class="s">'visible'</span>    <span class="c"># 1 │ 2: the workspace on each monitor</span>
+      <section id="features" class="reveal">
+        <div class="label">// built in</div>
+        <h2>Everything. <span class="neon-text">One app.</span></h2>
+        <p class="lead">What used to take a window manager, a bar, a border daemon and a folder of scripts.</p>
+        <div class="grid">
+          <div class="card tilt"><div class="ico">⊞</div><h3>TILING</h3><p>AeroSpace's tree tiling, virtual workspaces and real multi-monitor support. No need to disable SIP.</p></div>
+          <div class="card tilt"><div class="ico">▭</div><h3>STATUS BAR</h3><p>One bar per screen: workspace pills, the front app, CPU, RAM, GPU, network, volume, battery, clock. Auto-hide and a notch panel.</p></div>
+          <div class="card tilt"><div class="ico">◈</div><h3>BORDERS</h3><p>A gradient ring around the focused window, a dim ring around the rest. Rounded, sharp on Retina, drawn by the app.</p></div>
+          <div class="card tilt"><div class="ico">⚡</div><h3>PLUGINS</h3><p>Any executable that prints JSON lines becomes a widget. React to events, add click menus, run commands.</p></div>
+          <div class="card tilt"><div class="ico">⌖</div><h3>MOUSE</h3><p>Focus follows the mouse. Hold <kbd>alt</kbd> and drag to move any window, Hyprland style.</p></div>
+          <div class="card tilt"><div class="ico">✦</div><h3>ONE-COMMAND SETUP</h3><p><code>hypr init</code> applies the macOS settings, backs them up for undo, and writes a starter config.</p></div>
+        </div>
+      </section>
 
-<span class="k">[borders]</span>
-    enabled = <span class="s">true</span>
-    width = <span class="s">5</span>
-    active = <span class="s">'gradient(0xffff2bd6,0xff22e4ff)'</span>
+      <section class="reveal">
+        <div class="label">// replace your stack</div>
+        <h2>Five tools <span class="neon-text">→ one</span></h2>
+        <p class="lead">No more versions drifting apart, no more scripts gluing them together.</p>
+        <div class="merge" id="merge">
+          <div class="stack">
+            <div class="chip">AeroSpace / Hyprspace</div>
+            <div class="chip">SketchyBar</div>
+            <div class="chip">JankyBorders</div>
+            <div class="chip">bar plugin scripts</div>
+            <div class="chip">setup scripts</div>
+          </div>
+          <div class="arrow">⟶</div>
+          <div class="one"><img src="icon.svg" alt=""><b class="neon-text">HyprDarwin</b><span style="color: var(--muted)">tiling · bar · borders · plugins · setup</span></div>
+        </div>
+      </section>
 
-<span class="k">[mode.main.binding]</span>
-    alt-enter = <span class="s">'new-window-or-open Terminal'</span>
-    alt-1 = <span class="s">'workspace 1'</span></pre>
-    </section>
+      <section id="install" class="reveal">
+        <div class="label">// jack in</div>
+        <h2>Install in <span class="neon-text">30 seconds</span></h2>
+        <p class="lead">Homebrew installs the app, the <code>hypr</code> CLI, shell completion and man pages.</p>
+        <div class="term">
+          <div class="head"><i></i><i></i><i></i><span>zsh — 80×24</span></div>
+          <pre id="term" aria-label="Install commands"></pre>
+        </div>
+        <div class="term-actions">
+          <button class="btn primary" type="button" id="copy">Copy commands</button>
+          <a class="btn" href="https://github.com/juniorsaldanha/hyprland-darwin/releases/latest">Download zip</a>
+          <a class="btn" href="wiki/#/getting-started/installation">Other ways</a>
+        </div>
+      </section>
 
-    <section id="plugins">
-      <h2>Plugins in any language</h2>
-      <p class="lead">A folder with a manifest and an executable. HyprDarwin runs it, supervises it and draws what it prints.</p>
-      <div class="split">
-        <div>
-          <p class="label">plugin.toml</p>
-          <pre class="code"><span class="k">api</span> = <span class="s">1</span>
+      <section class="reveal">
+        <div class="label">// extend</div>
+        <h2>Plugins in <span class="neon-text">any language</span></h2>
+        <p class="lead">A folder with a manifest and an executable. HyprDarwin runs it, supervises it and draws what it prints.</p>
+        <div class="split">
+          <pre class="code"><span class="c"># plugin.toml</span>
+<span class="k">api</span> = <span class="s">1</span>
 <span class="k">exec</span> = <span class="s">"./run.sh"</span>
 <span class="k">mode</span> = <span class="s">"interval"</span>   <span class="c"># or "stream"</span>
 <span class="k">interval</span> = <span class="s">5</span>
 <span class="k">events</span> = [<span class="s">"click"</span>, <span class="s">"wake"</span>]</pre>
-        </div>
-        <div>
-          <p class="label">run.sh</p>
-          <pre class="code"><span class="c">#!/bin/sh</span>
+          <pre class="code"><span class="c">#!/bin/sh  — run.sh</span>
 pct=$(memory_pressure | awk <span class="s">'/free percentage/ {print 100-$5}'</span>)
 printf <span class="s">'{"icon":"\\uE266","label":"%s%%"}\n'</span> <span class="s">"$pct"</span>
-<span class="c"># {"run": "workspace 2"} runs a command</span>
-<span class="c"># {"popup": [...]} adds a click menu</span></pre>
+<span class="c"># {"run": "workspace 2"}  runs a command</span>
+<span class="c"># {"popup": [...]}        adds a click menu</span></pre>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section>
-      <h2>Free and open source</h2>
-      <p class="lead">MIT-licensed. Built on <a href="https://github.com/nikitabobko/AeroSpace">AeroSpace</a> by Nikita Bobko,
-        with ideas from <a href="https://hypr.land">Hyprland</a>, <a href="https://github.com/FelixKratz/SketchyBar">SketchyBar</a>
-        and <a href="https://github.com/FelixKratz/JankyBorders">JankyBorders</a>.</p>
-      <div class="cta" style="justify-content: flex-start">
-        <a class="btn primary" href="https://github.com/juniorsaldanha/hyprland-darwin">Star on GitHub</a>
-        <a class="btn" href="https://github.com/juniorsaldanha/hyprland-darwin/issues">Report an issue</a>
-      </div>
-    </section>
-  </div>
-
-  <footer>
-    <div class="wrap">
-      <span>HyprDarwin · MIT</span>
-      <span>Not affiliated with Hyprland or Apple.</span>
+      <section class="reveal">
+        <div class="wiki-cta">
+          <div class="label">// read the manual</div>
+          <h2 class="flicker-text">THE WIKI</h2>
+          <p class="lead" style="margin: 0 auto">From the first launch to a fully riced setup: tutorial, configuration, plugins and the CLI.</p>
+          <div class="wiki-links">
+            <a class="btn primary" href="wiki/#/getting-started/master-tutorial">Master tutorial</a>
+            <a class="btn" href="wiki/#/configuring/basics">Configuring</a>
+            <a class="btn" href="wiki/#/plugins/writing">Writing plugins</a>
+            <a class="btn" href="wiki/#/reference/cli">CLI</a>
+          </div>
+        </div>
+      </section>
     </div>
+  </main>
+
+  <footer class="site">
+    <span>HyprDarwin · MIT · built on <a href="https://github.com/nikitabobko/AeroSpace">AeroSpace</a></span>
+    <span>Not affiliated with Hyprland or Apple.</span>
   </footer>
 
   <script>
-    document.querySelectorAll("button.copy").forEach((button) => {
-      button.addEventListener("click", async () => {
-        const text = document.getElementById(button.dataset.copy).innerText.replace(/^\$ /gm, "");
-        try {
-          await navigator.clipboard.writeText(text);
-          button.textContent = "Copied";
-        } catch {
-          button.textContent = "Select it";
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ---------- falling code ----------
+    (() => {
+      const canvas = document.getElementById("rain");
+      const ctx = canvas.getContext("2d");
+      const glyphs = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄ0123456789ABCDEF<>{}[]/=+*";
+      const size = 16;
+      let cols = [];
+      const resize = () => {
+        canvas.width = innerWidth; canvas.height = innerHeight;
+        cols = Array.from({ length: Math.ceil(innerWidth / size) }, () => Math.random() * -innerHeight / size);
+      };
+      resize(); addEventListener("resize", resize);
+      if (reduce) return;
+      let last = 0;
+      const frame = (t) => {
+        requestAnimationFrame(frame);
+        if (t - last < 55) return; // ~18 fps is plenty
+        last = t;
+        ctx.fillStyle = "rgba(7, 1, 15, 0.16)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = `${size}px JetBrains Mono, monospace`;
+        cols.forEach((y, i) => {
+          ctx.fillStyle = i % 3 === 0 ? "#22e4ff" : "#ff2bd6";
+          ctx.fillText(glyphs[(Math.random() * glyphs.length) | 0], i * size, y * size);
+          cols[i] = y * size > canvas.height && Math.random() > 0.975 ? 0 : y + 1;
+        });
+      };
+      requestAnimationFrame(frame);
+    })();
+
+    // ---------- cursor glow ----------
+    (() => {
+      const glow = document.querySelector(".glow-cursor");
+      if (reduce || matchMedia("(pointer: coarse)").matches) { glow.remove(); return; }
+      addEventListener("pointermove", (e) => { glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`; });
+    })();
+
+    // ---------- typed tagline ----------
+    (() => {
+      const el = document.getElementById("typed");
+      const words = ["tiling", "a status bar", "neon borders", "plugins", "alt + drag", "one app"];
+      if (reduce) { el.textContent = words.join(" · "); return; }
+      let w = 0, i = words[0].length, deleting = true;
+      const tick = () => {
+        i += deleting ? -1 : 1;
+        el.textContent = words[w].slice(0, i);
+        let delay = deleting ? 45 : 90;
+        if (deleting && i === 0) { deleting = false; w = (w + 1) % words.length; delay = 300; }
+        else if (!deleting && i === words[w].length) { deleting = true; delay = 1800; }
+        setTimeout(tick, delay);
+      };
+      setTimeout(tick, 1800);
+    })();
+
+    // ---------- ticker ----------
+    (() => {
+      const items = ["TILING", "STATUS BAR", "BORDERS", "PLUGINS", "WORKSPACES", "ALT + DRAG", "NOTCH PANEL", "JSON LINES", "HYPR INIT", "MULTI-MONITOR", "NO SIP"];
+      const html = items.map((s) => `<span>${s}</span><span>//</span>`).join("");
+      document.getElementById("ticker").innerHTML = html + html; // twice: the loop scrolls by half
+    })();
+
+    // ---------- live tiling demo ----------
+    (() => {
+      const stage = document.getElementById("stage");
+      const wins = Object.fromEntries([...stage.querySelectorAll(".win")].map((w) => [w.dataset.id, w]));
+      const pills = [...document.querySelectorAll("#pills .pill")];
+      const keys = document.getElementById("keys");
+      const G = 5; // half the gap, px
+      const R = (x, y, w, h) => ({ x, y, w, h });
+      // Each step: the visible windows' tiles (fractions of the stage), the focused one, the workspace, the keys pressed
+      const steps = [
+        { ws: 0, focus: "a", keys: ["alt", "1"], tiles: { a: R(0, 0, 1, 1) } },
+        { ws: 0, focus: "b", keys: ["alt", "enter"], tiles: { a: R(0, 0, 0.5, 1), b: R(0.5, 0, 0.5, 1) } },
+        { ws: 0, focus: "c", keys: ["alt", "enter"], tiles: { a: R(0, 0, 0.5, 1), b: R(0.5, 0, 0.5, 0.5), c: R(0.5, 0.5, 0.5, 0.5) } },
+        { ws: 0, focus: "a", keys: ["alt", "h"], tiles: { a: R(0, 0, 0.5, 1), b: R(0.5, 0, 0.5, 0.5), c: R(0.5, 0.5, 0.5, 0.5) } },
+        { ws: 0, focus: "a", keys: ["alt", "="], tiles: { a: R(0, 0, 0.62, 1), b: R(0.62, 0, 0.38, 0.5), c: R(0.62, 0.5, 0.38, 0.5) } },
+        { ws: 0, focus: "c", keys: ["alt", "shift", "k"], tiles: { a: R(0, 0, 0.62, 1), c: R(0.62, 0, 0.38, 0.5), b: R(0.62, 0.5, 0.38, 0.5) } },
+        { ws: 1, focus: "d", keys: ["alt", "2"], tiles: { d: R(0, 0, 1, 1) } },
+        { ws: 0, focus: "c", keys: ["alt", "tab"], tiles: { a: R(0, 0, 0.62, 1), c: R(0.62, 0, 0.38, 0.5), b: R(0.62, 0.5, 0.38, 0.5) } },
+      ];
+      const place = (step) => {
+        pills.forEach((p, i) => p.classList.toggle("on", i === step.ws));
+        for (const [id, w] of Object.entries(wins)) {
+          const t = step.tiles[id];
+          w.classList.toggle("hidden", !t);
+          w.classList.toggle("focus", id === step.focus);
+          if (!t) continue;
+          w.style.left = `calc(${t.x * 100}% + ${G}px)`;
+          w.style.top = `calc(${t.y * 100}% + ${G}px)`;
+          w.style.width = `calc(${t.w * 100}% - ${2 * G}px)`;
+          w.style.height = `calc(${t.h * 100}% - ${2 * G}px)`;
         }
-        setTimeout(() => (button.textContent = "Copy"), 1500);
+        keys.innerHTML = `<span>pressed</span><span class="combo">${step.keys.map((k) => `<kbd>${k}</kbd>`).join("+")}</span>`;
+      };
+      if (reduce) { place(steps[3]); return; }
+      let i = 0;
+      place(steps[0]);
+      setInterval(() => { i = (i + 1) % steps.length; place(steps[i]); }, 1900);
+      // the widgets tick like the real bar
+      const cpu = document.getElementById("cpu"), clock = document.getElementById("clock");
+      setInterval(() => {
+        cpu.textContent = 8 + ((Math.random() * 30) | 0);
+        const d = new Date();
+        clock.textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      }, 2000);
+    })();
+
+    // ---------- 3D tilt cards ----------
+    if (!reduce && matchMedia("(pointer: fine)").matches) {
+      document.querySelectorAll(".tilt").forEach((card) => {
+        card.addEventListener("pointermove", (e) => {
+          const r = card.getBoundingClientRect();
+          const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+          card.style.transform = `perspective(700px) rotateY(${x * 14}deg) rotateX(${-y * 14}deg) translateZ(6px)`;
+        });
+        card.addEventListener("pointerleave", () => { card.style.transform = ""; });
       });
+    }
+
+    // ---------- terminal typing ----------
+    const commands = [
+      "brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprland-darwin",
+      "brew install --cask hyprdarwin",
+      "hypr init",
+      "open -a HyprDarwin",
+    ];
+    const outputs = [
+      "<span class=\"dim\">==> Tapped 1 cask</span>",
+      "<span class=\"ok\">🍺  hyprdarwin was successfully installed!</span>",
+      "<span class=\"ok\">  ✓</span> macOS settings applied (backup saved)\n<span class=\"ok\">  ✓</span> wrote a starter config: ~/.config/hyprland-darwin/config.toml",
+      "<span class=\"dim\">// grant Accessibility when asked. welcome to the grid.</span>",
+    ];
+    const term = document.getElementById("term");
+    let typedOnce = false;
+    const typeTerminal = async () => {
+      if (typedOnce) return;
+      typedOnce = true;
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      let html = "";
+      for (let c = 0; c < commands.length; c++) {
+        html += "<span class=\"p\">❯ </span>";
+        if (!reduce) {
+          for (let i = 1; i <= commands[c].length; i++) {
+            term.innerHTML = html + commands[c].slice(0, i) + "<span class=\"cur\"></span>";
+            await sleep(commands[c].length > 40 ? 14 : 45);
+          }
+          await sleep(250);
+        }
+        html += commands[c] + "\n" + outputs[c] + "\n";
+        term.innerHTML = html + "<span class=\"cur\"></span>";
+        if (!reduce) await sleep(500);
+      }
+      term.innerHTML = html + "<span class=\"p\">❯ </span><span class=\"cur\"></span>";
+    };
+    document.getElementById("copy").addEventListener("click", async (e) => {
+      try {
+        await navigator.clipboard.writeText(commands.slice(0, 3).join("\n"));
+        e.target.textContent = "Copied ✓";
+      } catch {
+        e.target.textContent = "Select the text above";
+      }
+      setTimeout(() => (e.target.textContent = "Copy commands"), 1800);
     });
+
+    // ---------- scroll reveal ----------
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add("in");
+        if (entry.target.querySelector("#term")) typeTerminal();
+        entry.target.querySelector("#merge")?.classList.add("in");
+        io.unobserve(entry.target);
+      }
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
   </script>
 </body>
 </html>
