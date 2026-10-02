@@ -31,6 +31,7 @@ private let permissionsWindowShownKey = "permissionsWindowShownOnce"
         case .none:
             return
         case .pause(let disableServer):
+            appLog.write("permissions: Accessibility revoked, tiling paused")
             TrayMenuModel.shared.axPermissionStatus = .waiting
             if disableServer {
                 // No refresh session: Accessibility calls would fail. Windows stay where they are.
@@ -38,6 +39,7 @@ private let permissionsWindowShownKey = "permissionsWindowShownOnce"
             }
             postPermissionMissingNotification()
         case .resume(let enableServer):
+            appLog.write("permissions: Accessibility granted, tiling resumed")
             TrayMenuModel.shared.axPermissionStatus = .granted
             rebuildModifierDragTap()
             if enableServer {

@@ -48,6 +48,11 @@ struct ReloadConfigResult {
                 MessageModel.shared.message = nil
         }
     }
+    if !args.dryRun {
+        for line in configLogLines(url: result.configUrl, errors: errors, warnings: warnings, applied: parseResult.allowReloadConfig) {
+            appLog.write(line)
+        }
+    }
     if parseResult.allowReloadConfig && !args.dryRun {
         TrayMenuModel.shared.lastReloadConfigContainedWarnings = containsWarnings
         resetHotKeys()
@@ -84,4 +89,11 @@ private func parsedWithWarningsMsg(configUrl: URL, warningsCount: Int, lines: [S
     let path = configUrl.absoluteURL.path.singleQuoted
     let header = "Parsed \(path) with \(warningsCount) warning(s). Feel free to close this window."
     return "\(header)\n\n\(lines.joined(separator: "\n\n"))"
+}
+
+/// Pure. What a reload writes to ~/Library/Logs/hyprland-darwin/hyprdarwin.log: the file, then every problem.
+func configLogLines(url: URL, errors: [String], warnings: [String], applied: Bool) -> [String] {
+    let counts = errors.isEmpty && warnings.isEmpty ? "" : " with \(errors.count) error(s), \(warnings.count) warning(s)"
+    let head = applied ? "config: loaded \(url.path)\(counts)" : "config: NOT applied (kept the previous config): \(url.path)\(counts)"
+    return [head] + (errors + warnings).map { "config:   \($0)" }
 }

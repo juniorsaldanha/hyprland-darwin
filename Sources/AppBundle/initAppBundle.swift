@@ -9,6 +9,7 @@ import Foundation
         interceptTermination(SIGTERM) // logout, killall: same clean shutdown as Quit (plugins included)
         unsafe _isCli = false
         initServerArgs()
+        appLog.write("HyprDarwin \(aeroSpaceAppVersion) (\(gitShortHash)) started, macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
         installNotificationClickHandler()
         showPermissionsWindowIfNeeded()
         await waitForAccessibilityPermission_nonCancellable()

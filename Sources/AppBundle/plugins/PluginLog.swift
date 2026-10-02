@@ -1,3 +1,4 @@
+import Common
 import Foundation
 
 let defaultPluginLogsDir = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Logs/hyprland-darwin")
@@ -60,5 +61,9 @@ final class PluginLog: @unchecked Sendable { // mutable state only touched on `q
     }
 }
 
-/// HyprDarwin's own log (things that would otherwise fail silently): ~/Library/Logs/hyprland-darwin/hyprdarwin.log
-let appLog = PluginLog(name: "hyprdarwin")
+/// HyprDarwin's own log: startup, config reloads with their errors, permission changes, and failures that would
+/// otherwise be silent. ~/Library/Logs/hyprland-darwin/hyprdarwin.log (a temp dir under tests: never the real log)
+let appLog = PluginLog(
+    name: "hyprdarwin",
+    dir: isUnitTest ? FileManager.default.temporaryDirectory.appending(path: "hyprdarwin-test-logs") : defaultPluginLogsDir,
+)
