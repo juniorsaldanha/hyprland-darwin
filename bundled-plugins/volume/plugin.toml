@@ -1,0 +1,5 @@
+api = 1
+exec = "./run.sh"
+mode = "interval"
+interval = 60
+events = ["volume"]
