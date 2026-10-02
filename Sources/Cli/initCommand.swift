@@ -7,7 +7,7 @@ let initUsage = """
     Apply the macOS settings HyprDarwin needs (previous values are backed up first),
     write a starter config if none exists, and optionally set the wallpaper on every screen.
       --undo                Restore the settings saved by the first `hypr init`
-      --wallpaper <path>    Set this image as the wallpaper on every screen
+      --wallpaper <path>    Set this image as the wallpaper on every screen (current Space)
     """
 
 /// Runs in the CLI process: works whether or not HyprDarwin.app is running
@@ -29,6 +29,10 @@ func runInit(_ args: [String]) -> Int32 {
     }
 
     let testDomain = ProcessInfo.processInfo.environment["HYPR_INIT_TEST_DOMAIN"]
+    if testDomain != nil, (ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"] ?? "").isEmpty {
+        eprint("HYPR_INIT_TEST_DOMAIN needs XDG_CONFIG_HOME too: otherwise the real config dir would be written")
+        return EXIT_CODE_TWO
+    }
     let tool = DefaultsTool(domainOverride: testDomain)
     let dir = hyprDarwinConfigDir()
     let backupUrl = dir.appending(path: "setup-backup.json")
@@ -54,7 +58,12 @@ func runInit(_ args: [String]) -> Int32 {
         return ok ? EXIT_CODE_ZERO : 1
     }
 
-    let plan = initPlan(current: tool.readBool, existingBackup: existingBackup)
+    let settings = setupSettings.filter { setting in
+        guard tool.isNonBoolean(setting.domain, setting.key) else { return true }
+        eprint("  ! left \(setting.domain) \(setting.key) alone: it holds a non-boolean value")
+        return false
+    }
+    let plan = initPlan(current: tool.readBool, existingBackup: existingBackup, settings: settings)
     do {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
@@ -66,7 +75,7 @@ func runInit(_ args: [String]) -> Int32 {
     }
 
     var exitCode = EXIT_CODE_ZERO
-    for setting in setupSettings {
+    for setting in settings {
         let action = DefaultsAction.write(domain: setting.domain, key: setting.key, value: setting.value)
         if !plan.actions.contains(action) {
             print("  ✓ \(setting.note)")
@@ -90,12 +99,16 @@ func runInit(_ args: [String]) -> Int32 {
 
     if let wallpaper {
         let url = URL(filePath: (wallpaper as NSString).expandingTildeInPath)
-        do {
-            for screen in NSScreen.screens { try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:]) }
-            print("  ✓ wallpaper set on \(NSScreen.screens.count) screen(s)")
-        } catch {
-            eprint("  ✗ wallpaper: \(error.localizedDescription)")
+        if !FileManager.default.fileExists(atPath: url.path) {
+            eprint("  ✗ wallpaper: no file at \(url.path)")
             exitCode = 1
+        } else if testDomain != nil {
+            print("  ✓ wallpaper path ok (not applied in test mode)")
+        } else if let error = setWallpaper(url) {
+            eprint("  ✗ wallpaper: \(error)")
+            exitCode = 1
+        } else {
+            print("  ✓ wallpaper set on \(NSScreen.screens.count) screen(s) (the current Space on each)")
         }
     }
 
@@ -114,4 +127,14 @@ private func refreshSystem() {
     DistributedNotificationCenter.default().postNotificationName(
         NSNotification.Name("AppleInterfaceMenuBarHidingChangedNotification"), object: nil, userInfo: nil, deliverImmediately: true,
     )
+}
+
+/// nil on success, the error message otherwise. macOS applies it to the current Space of each screen.
+private func setWallpaper(_ url: URL) -> String? {
+    do {
+        for screen in NSScreen.screens { try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: [:]) }
+        return nil
+    } catch {
+        return error.localizedDescription
+    }
 }

@@ -54,6 +54,19 @@ echo '{"entries": [' > "$init_home/hyprland-darwin/setup-backup.json"
 run_init 2> /dev/null && fail "init must refuse an unreadable backup"
 run_init --undo 2> /dev/null && fail "init --undo must refuse an unreadable backup"
 test "$(cat "$init_home/hyprland-darwin/setup-backup.json")" = '{"entries": [' || fail "init replaced an unreadable backup"
+rm "$init_home/hyprland-darwin/setup-backup.json"
+# A non-boolean value is left alone (not overwritten, not recorded, so undo can't delete it)
+/usr/bin/defaults write "$init_domain" spans-displays -string keep-me
+run_init 2> /dev/null || fail "init failed with a non-boolean value present"
+test "$(/usr/bin/defaults read "$init_domain" spans-displays)" = keep-me || fail "init overwrote a non-boolean value"
+grep -q spans-displays "$init_home/hyprland-darwin/setup-backup.json" && fail "init recorded a value it didn't change"
+run_init --undo || fail "undo failed"
+test "$(/usr/bin/defaults read "$init_domain" spans-displays)" = keep-me || fail "undo touched a non-boolean value"
+# A missing wallpaper is an error (checked even in test mode, where the wallpaper itself is never changed)
+run_init --wallpaper /nonexistent/wall.jpg 2> /dev/null && fail "init must reject a missing wallpaper"
+# Test mode without a temp config dir must refuse: it would write the real ~/.config
+HYPR_INIT_TEST_DOMAIN="$init_domain" XDG_CONFIG_HOME= "$cli" init > /dev/null 2>&1 && fail "test mode without XDG_CONFIG_HOME must refuse"
+"$cli" --help | grep -q "^ *init " || fail "'init' missing from --help"
 
 # App bundle
 if test -n "$app"; then

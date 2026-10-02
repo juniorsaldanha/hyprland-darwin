@@ -89,6 +89,12 @@ public struct DefaultsTool: Sendable {
         }
     }
 
+    /// True when the key exists with a non-boolean type: init leaves such a value alone
+    public func isNonBoolean(_ domain: String, _ key: String) -> Bool {
+        let (status, out) = run(["read-type", domainOverride ?? domain, key])
+        return status == 0 && !out.contains("boolean")
+    }
+
     @discardableResult
     public func apply(_ action: DefaultsAction) -> Bool {
         switch action {

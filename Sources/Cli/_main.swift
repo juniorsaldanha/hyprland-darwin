@@ -8,7 +8,7 @@ let usage =
     USAGE: \(CommandLine.arguments.first ?? "aerospace") [-h|--help] [-v|--version] <subcommand> [<args>...]
 
     SUBCOMMANDS:
-    \(subcommandDescriptions.sortedBy { $0[0] }.toPaddingTable(columnSeparator: "   ").joined(separator: "\n"))
+    \((subcommandDescriptions + [["  init", "Apply HyprDarwin's macOS settings (backed up first) and write a starter config"]]).sortedBy { $0[0] }.toPaddingTable(columnSeparator: "   ").joined(separator: "\n"))
     """
 
 @main
