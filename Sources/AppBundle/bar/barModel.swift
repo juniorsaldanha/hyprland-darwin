@@ -129,16 +129,19 @@ func barIconInk(_ icon: String, font: NSFont) -> CGRect {
     let scale: CGFloat = 4
     let side = font.pointSize * 3 // baseline origin at (pointSize, pointSize): room on every side
     let pixels = Int(ceil(side * scale))
-    guard let ctx = CGContext(data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: pixels,
-                              space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue),
-        let data = ctx.data else { return CGRect(x: 0, y: font.descender, width: font.pointSize, height: font.pointSize) }
+    let fallback = CGRect(x: 0, y: font.descender, width: font.pointSize, height: font.pointSize)
+    guard let ctx = unsafe CGContext(data: nil, width: pixels, height: pixels, bitsPerComponent: 8, bytesPerRow: 0,
+                                     space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return fallback }
     ctx.scaleBy(x: scale, y: scale)
     ctx.textPosition = CGPoint(x: font.pointSize, y: font.pointSize)
     CTLineDraw(CTLineCreateWithAttributedString(NSAttributedString(string: icon, attributes: [.font: font, .foregroundColor: NSColor.white])), ctx)
-    let bytes = data.bindMemory(to: UInt8.self, capacity: pixels * pixels)
+    // Read back through CGImage → Data: no raw pointers (strict memory safety)
+    guard let image = ctx.makeImage(), let cfData = image.dataProvider?.data else { return fallback }
+    let bytes = cfData as Data
+    let stride = image.bytesPerRow
     var minX = pixels, maxX = -1, minRow = pixels, maxRow = -1
     for row in 0 ..< pixels {
-        for x in 0 ..< pixels where unsafe bytes[row * pixels + x] > 127 {
+        for x in 0 ..< pixels where bytes[row * stride + x] > 127 {
             minX = min(minX, x); maxX = max(maxX, x); minRow = min(minRow, row); maxRow = max(maxRow, row)
         }
     }
