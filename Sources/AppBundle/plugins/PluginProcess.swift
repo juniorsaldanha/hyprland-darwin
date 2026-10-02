@@ -7,6 +7,13 @@ struct PluginTiming: Sendable {
     func interval(_ seconds: Int) -> TimeInterval { Double(seconds) * scale }
 }
 
+/// Environment for an event-triggered interval run
+func eventEnvironment(_ kind: PluginEventKind, line: String, button: String?) -> [String: String] {
+    var env = ["HYPR_EVENT": kind.rawValue, "HYPR_EVENT_JSON": line]
+    if let button { env["HYPR_BUTTON"] = button }
+    return env
+}
+
 enum PluginStatus: Equatable, Sendable, CustomStringConvertible {
     case starting
     case running
@@ -58,6 +65,8 @@ final class PluginProcess: @unchecked Sendable {
     private var health = IntervalHealth()
     private var intervalTimer: DispatchSourceTimer? = nil
     private var intervalRunning = false
+    /// Latest event that arrived during a run: replayed once the run ends (bursts coalesce, the newest event wins)
+    private var deferredTrigger: (seconds: Int, environment: [String: String])? = nil
     private var stdinFd: Int32 = -1
     private var pending = BoundedQueue<Data>(capacity: 64)
     private var partial = Data()
@@ -116,6 +125,14 @@ final class PluginProcess: @unchecked Sendable {
         }
     }
 
+    /// Interval plugins: run now with the event in the environment. Skipped while a run is in progress.
+    func trigger(_ kind: PluginEventKind, line: String, button: String?) {
+        queue.async { [self] in
+            guard case .interval(let seconds) = manifest.mode else { return }
+            runOnce(seconds, extraEnvironment: eventEnvironment(kind, line: line, button: button))
+        }
+    }
+
     func pendingEventCount() -> Int { queue.sync { pending.count } }
 
     // MARK: queue-only
@@ -143,7 +160,7 @@ final class PluginProcess: @unchecked Sendable {
     }
 
     /// Spawns with stdout/stderr pipes. Returns the read ends; the child's ends are closed here.
-    private func spawn(stdin childStdin: Int32) -> (pid: pid_t, stdout: Int32, stderr: Int32)? {
+    private func spawn(stdin childStdin: Int32, extraEnvironment: [String: String] = [:]) -> (pid: pid_t, stdout: Int32, stderr: Int32)? {
         var out: [Int32] = [0, 0]
         var err: [Int32] = [0, 0]
         guard unsafe pipe(&out) == 0 else { return nil }
@@ -152,7 +169,7 @@ final class PluginProcess: @unchecked Sendable {
             close(out[1])
             return nil
         }
-        switch spawnPlugin(path: manifest.execPath, environment: environment, directory: dir, stdin: childStdin, stdout: out[1], stderr: err[1]) {
+        switch spawnPlugin(path: manifest.execPath, environment: environment.merging(extraEnvironment) { _, new in new }, directory: dir, stdin: childStdin, stdout: out[1], stderr: err[1]) {
             case .success(let pid):
                 close(out[1])
                 close(err[1])
@@ -291,11 +308,15 @@ final class PluginProcess: @unchecked Sendable {
         intervalTimer = timer
     }
 
-    private func runOnce(_ seconds: Int) {
-        guard !isStopped, !intervalRunning else { return }
+    private func runOnce(_ seconds: Int, extraEnvironment: [String: String] = [:]) {
+        guard !isStopped else { return }
+        guard !intervalRunning else {
+            if !extraEnvironment.isEmpty { deferredTrigger = (seconds, extraEnvironment) } // timer ticks are just skipped
+            return
+        }
         let devNull = unsafe open("/dev/null", O_RDONLY)
         defer { close(devNull) }
-        guard let child = spawn(stdin: devNull) else { return finishInterval(success: false) }
+        guard let child = spawn(stdin: devNull, extraEnvironment: extraEnvironment) else { return finishInterval(success: false) }
         intervalRunning = true
         let state = RunState()
         let finishIfDone: @Sendable () -> Void = { [self] in
@@ -337,5 +358,9 @@ final class PluginProcess: @unchecked Sendable {
         intervalRunning = false
         health.record(success: success)
         report(health.isFailing ? .failing(health.consecutiveFailures) : .running)
+        if let (seconds, environment) = deferredTrigger {
+            deferredTrigger = nil
+            runOnce(seconds, extraEnvironment: environment)
+        }
     }
 }

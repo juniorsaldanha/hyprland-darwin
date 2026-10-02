@@ -3,9 +3,14 @@ import Foundation
 
 @MainActor final class WidgetStore: ObservableObject {
     @Published private(set) var widgets: [String: WidgetState] = [:]
+    @Published private(set) var statuses: [String: PluginStatus] = [:]
 
     func apply(_ patch: WidgetPatch, to name: String) { widgets[name, default: WidgetState()].apply(patch) }
-    func remove(_ name: String) { widgets[name] = nil }
+    func setStatus(_ status: PluginStatus, for name: String) { statuses[name] = status }
+    func remove(_ name: String) {
+        widgets[name] = nil
+        statuses[name] = nil
+    }
 }
 
 struct PluginSnapshot: Equatable, Encodable {
@@ -90,10 +95,18 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
     }
 
     func send(_ kind: PluginEventKind, _ line: String) {
-        for name in order {
-            guard let hosted = plugins[name], case .ok(_, let manifest) = hosted.resolution,
-                  manifest.mode == .stream, manifest.events.contains(kind) else { continue }
-            hosted.process?.send(line)
+        for name in order { deliver(kind, line, button: nil, to: name) }
+    }
+
+    func click(_ name: String, button: String) {
+        deliver(.click, encodePluginEvent(.click, ["button": button]), button: button, to: name)
+    }
+
+    private func deliver(_ kind: PluginEventKind, _ line: String, button: String?, to name: String) {
+        guard let hosted = plugins[name], case .ok(_, let manifest) = hosted.resolution, manifest.events.contains(kind) else { return }
+        switch manifest.mode {
+            case .stream: hosted.process?.send(line)
+            case .interval: hosted.process?.trigger(kind, line: line, button: button)
         }
     }
 
@@ -118,13 +131,17 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
     private func makeHosted(_ plugin: ResolvedPlugin, _ environment: [String: String]) -> Hosted {
         switch plugin.resolution {
             case .missing(let searched):
-                return Hosted(plugin.resolution, status: .missing("no plugin folder in \(searched.joined(separator: ", "))"))
+                let status = PluginStatus.missing("no plugin folder in \(searched.joined(separator: ", "))")
+                store.setStatus(status, for: plugin.name)
+                return Hosted(plugin.resolution, status: status)
             case .invalid(let reason):
+                store.setStatus(.invalid(reason), for: plugin.name)
                 return Hosted(plugin.resolution, status: .invalid(reason))
             case .ok(let dir, let manifest):
                 let name = plugin.name
                 let log = PluginLog(name: name, dir: logsDir)
                 let hosted = Hosted(plugin.resolution, status: .starting)
+                store.setStatus(.starting, for: name)
                 let process = PluginProcess(
                     name: name,
                     dir: dir,
@@ -140,6 +157,7 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
                         guard let self, let hosted, plugins[name] === hosted else { return }
                         if case .restarting = status { hosted.restarts += 1 }
                         hosted.status = status
+                        store.setStatus(status, for: name)
                     },
                 )
                 hosted.process = process

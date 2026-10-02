@@ -14,9 +14,9 @@ enum PluginMode: Equatable, Sendable {
     }
 }
 
-/// Events a plugin can subscribe to. 'click' and 'power' arrive with the bar.
+/// Events a plugin can subscribe to
 enum PluginEventKind: String, CaseIterable, Sendable {
-    case workspace, focus, monitor, wake
+    case workspace, focus, monitor, wake, click, power, volume
 }
 
 struct PluginManifest: Equatable, Sendable {

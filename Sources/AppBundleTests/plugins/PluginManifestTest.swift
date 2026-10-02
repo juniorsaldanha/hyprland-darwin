@@ -29,7 +29,7 @@ final class PluginManifestTest: XCTestCase {
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'poll'"), .failure("mode must be 'interval' or 'stream'"))
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'interval'"), .failure("interval mode needs 'interval' >= 1"))
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'interval'\ninterval = 0"), .failure("interval mode needs 'interval' >= 1"))
-        assertEquals(parse("api = 1\nexec = 'x'\nmode = 'stream'\nevents = ['click']"), .failure("unknown event 'click'"))
+        assertEquals(parse("api = 1\nexec = 'x'\nmode = 'stream'\nevents = ['hover']"), .failure("unknown event 'hover'"))
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'stream'\nevents = 'focus'"), .failure("'events' must be an array"))
         assertTrue(parse("api = = 1").failureOrNil?.hasPrefix("plugin.toml: ") == true)
     }
@@ -54,5 +54,12 @@ final class PluginManifestTest: XCTestCase {
     func testResolveInvalidManifest() {
         let resolved = resolvePlugins(names: ["bad"], userDirs: ["/u"], bundledDir: nil, readManifest: { $0 == "/u/bad" ? "api = 9" : nil }, isExecutable: { _ in true })
         assertEquals(resolved.first?.resolution, .invalid("unsupported api 9, expected 1"))
+    }
+
+    func testBarEventsAccepted() {
+        assertEquals(
+            parse("api = 1\nexec = 'x'\nmode = 'interval'\ninterval = 5\nevents = ['click', 'power', 'volume', 'wake']"),
+            .success(PluginManifest(execPath: "/p/gpu/x", mode: .interval(seconds: 5), events: [.click, .power, .volume, .wake])),
+        )
     }
 }

@@ -41,6 +41,18 @@ final class PluginMessagesTest: XCTestCase {
         state.apply(WidgetPatch(hidden: false))
         assertFalse(state.hidden)
     }
+
+    func testPopup() {
+        assertEquals(decode(#"{"popup":[{"label":"Open","run":"workspace 2"},{"label":"Info"}]}"#),
+                     .update(WidgetPatch(popup: [PopupItem(label: "Open", run: "workspace 2"), PopupItem(label: "Info", run: nil)]), ignored: []))
+        assertEquals(decode(#"{"popup":[]}"#), .update(WidgetPatch(popup: []), ignored: []))
+        assertEquals(decode(#"{"popup":"x"}"#), .update(WidgetPatch(), ignored: ["popup"]))
+        assertEquals(decode(#"{"popup":[{"run":"x"}]}"#), .update(WidgetPatch(), ignored: ["popup"]))
+        var state = WidgetState()
+        state.apply(WidgetPatch(popup: [PopupItem(label: "A", run: nil)]))
+        state.apply(WidgetPatch(strings: ["label": "x"]))
+        assertEquals(state.popup, [PopupItem(label: "A", run: nil)])
+    }
 }
 
 final class LineSplitterTest: XCTestCase {

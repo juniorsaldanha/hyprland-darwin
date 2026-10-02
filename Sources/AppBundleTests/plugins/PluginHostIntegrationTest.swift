@@ -173,6 +173,41 @@ final class PluginHostIntegrationTest: XCTestCase {
         assertEquals(status("crash"), "starting")
     }
 
+    func testEventTriggersIntervalRunWithEnv() throws {
+        // interval 100 × 0.05 = 5 s: after the first run, only events trigger more runs during the test
+        try plugin("trig", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 100\nevents = ['wake', 'click']",
+                   script: "printf '{\"label\":\"%s:%s:%s\"}\\n' \"$HYPR_EVENT\" \"$HYPR_BUTTON\" \"$(printf '%s' \"$HYPR_EVENT_JSON\" | tr -d '{}\\\"')\"\n")
+        sync(["trig"])
+        assertTrue(waitUntil { label("trig") == "::" })
+        host.send(.wake, encodePluginEvent(.wake))
+        assertTrue(waitUntil { label("trig") == "wake::event:wake" })
+        host.click("trig", button: "right")
+        assertTrue(waitUntil { label("trig") == "click:right:button:right,event:click" })
+        host.send(.power, encodePluginEvent(.power, ["source": "ac"])) // not subscribed
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        assertEquals(label("trig"), "click:right:button:right,event:click")
+    }
+
+    func testClickReachesSubscribedStreamPlugin() throws {
+        try plugin("clicky", manifest: stream + "events = ['click']", script: """
+            while IFS= read -r line; do
+              case "$line" in *'"button":"left"'*) echo '{"label":"clicked"}' ;; esac
+            done
+            """)
+        sync(["clicky"])
+        assertTrue(waitUntil { status("clicky") == "running" })
+        host.click("clicky", button: "left")
+        assertTrue(waitUntil { label("clicky") == "clicked" })
+    }
+
+    func testPopupReachesStoreAndStatusesArePublished() throws {
+        try plugin("menu", manifest: stream, script: "echo '{\"label\":\"m\",\"popup\":[{\"label\":\"Go\",\"run\":\"workspace 3\"}]}'\nexec sleep 30\n")
+        sync(["menu", "ghost"])
+        assertTrue(waitUntil { host.store.widgets["menu"]?.popup == [PopupItem(label: "Go", run: "workspace 3")] })
+        assertTrue(waitUntil { host.store.statuses["menu"] == .running })
+        assertEquals(host.store.statuses["ghost"], .missing("no plugin folder in \(root.path)"))
+    }
+
     func testMissingAndInvalidStatuses() throws {
         try plugin("bad", manifest: "api = 7", script: "")
         sync(["bad", "ghost"])

@@ -73,7 +73,7 @@ right = ['disk', 'ram', 'gpu', 'cpu', 'network', 'volume', 'battery', 'clock']  
   ```
 
   `source` is `ac` or `battery`. `button` is `left` or `right`.
-- **Interval plugins and events:** a subscribed event triggers an immediate extra run. The run gets `HYPR_EVENT=<kind>` and `HYPR_EVENT_JSON=<the event line>`; a click also gets `HYPR_BUTTON=<button>`. A run already in progress means the trigger is skipped.
+- **Interval plugins and events:** a subscribed event triggers an immediate extra run. The run gets `HYPR_EVENT=<kind>` and `HYPR_EVENT_JSON=<the event line>`; a click also gets `HYPR_BUTTON=<button>`. A trigger arriving during a run is kept, replacing any earlier pending one, and runs once the current run ends: bursts coalesce and the newest event wins.
 - **Popup:** `{"popup":[{"label":"…","run":"…"}]}` sets the widget's popup items; `[]` clears them.
   - Clicking a widget that has popup items opens a menu instead of sending `click`.
   - Choosing an item runs its `run` command, if it has one.
