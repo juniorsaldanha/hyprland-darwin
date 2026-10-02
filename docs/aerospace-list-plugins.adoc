@@ -1,0 +1,34 @@
+= aerospace-list-plugins(1)
+include::util/man-attributes.adoc[]
+// tag::purpose[]
+:manpurpose: Print the plugins placed in the bar and notch, with their status
+// end::purpose[]
+:manname: aerospace-list-plugins
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace list-plugins [-h|--help] [--json]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}.
+One line per plugin: `name | mode | status | restarts | label`.
+Status is one of `starting`, `running`, `failing (n)`, `restarting in Ns`, `stopped: <reason>`, `missing: <reason>`, `invalid: <reason>`.
+Each plugin logs to `~/Library/Logs/hyprland-darwin/<name>.log`.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+--json:: Output in JSON format, including the full widget state
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

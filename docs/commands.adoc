@@ -153,6 +153,13 @@ include::aerospace-list-monitors.adoc[tags=synopsis]
 include::aerospace-list-monitors.adoc[tags=purpose]
 include::aerospace-list-monitors.adoc[tags=body]
 
+== list-plugins
+----
+include::./aerospace-list-plugins.adoc[tags=synopsis]
+----
+include::./aerospace-list-plugins.adoc[tags=purpose]
+include::./aerospace-list-plugins.adoc[tags=body]
+
 == list-windows
 ----
 include::aerospace-list-windows.adoc[tags=synopsis]

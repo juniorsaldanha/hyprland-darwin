@@ -20,6 +20,9 @@ targets:
       - "../Sources/AeroSpaceApp"
       - "../resources"
       - "../docs/config-examples/default-config.toml"
+      - path: "../bundled-plugins"
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: AeroSpacePackage
         product: AppBundle

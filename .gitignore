@@ -8,6 +8,7 @@
 !/.github
 !/Sources
 !/axDumps
+!/bundled-plugins
 !/dev-docs
 !/docs
 !/grammar

@@ -1,0 +1,5 @@
+# Example stream plugin: shows the focused workspace. Copy this folder to start your own.
+api = 1
+exec = "./example.sh"
+mode = "stream"
+events = ["workspace"]
