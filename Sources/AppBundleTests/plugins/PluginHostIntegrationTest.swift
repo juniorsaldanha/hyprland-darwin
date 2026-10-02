@@ -64,7 +64,7 @@ final class PluginHostIntegrationTest: XCTestCase {
         // `sleep` is a child of sh: unless the whole group dies, stdout never closes and no further run starts
         try plugin("slow", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 1", script: "sleep 10\necho '{\"label\":\"never\"}'\n")
         sync(["slow"])
-        assertTrue(waitUntil { status("slow") == "failing (3)" })
+        assertTrue(waitUntil { failureCount(status("slow")) >= 3 })
         assertNil(label("slow"))
     }
 
@@ -155,7 +155,13 @@ final class PluginHostIntegrationTest: XCTestCase {
         // The background `sleep` keeps stdout open after the script exits: the run must still end at the timeout
         try plugin("bg", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 1", script: "sleep 3 &\nexit 1\n")
         sync(["bg"])
-        assertTrue(waitUntil(2) { status("bg") == "failing (3)" })
+        // At least 3: runs come every ~50 ms, so a poll on a loaded machine can land on (4) or later
+        assertTrue(waitUntil(2) { failureCount(status("bg")) >= 3 })
+    }
+
+    private func failureCount(_ status: String?) -> Int {
+        guard let status, status.hasPrefix("failing (") else { return 0 }
+        return Int(status.dropFirst("failing (".count).dropLast()) ?? 0
     }
 
     func testStreamExitKillsLeftoverChildren() throws {
