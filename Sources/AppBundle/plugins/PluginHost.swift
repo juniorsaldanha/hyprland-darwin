@@ -154,5 +154,3 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
         }
     }
 }
-
-@MainActor func runPluginCommand(_ plugin: String, _ command: String) {}

@@ -57,6 +57,7 @@ struct ReloadConfigResult {
         syncStartAtLogin()
         syncFocusFollowsMouse(config)
         syncModifierDrag(config)
+        syncPlugins(config)
         syncConfigFileWatcher()
     }
 
