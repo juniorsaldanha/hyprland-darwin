@@ -21,7 +21,7 @@ import Common
 
 /// `{"run": "..."}` from a plugin: same rules as a keybinding (not run while tiling is disabled)
 @MainActor func runPluginCommand(_ plugin: String, _ command: String) {
-    let log = PluginLog(name: plugin)
+    let log = PluginLog.shared(name: plugin)
     guard let token: RunSessionGuard = .isServerEnabled else {
         log.write("run '\(command)' ignored: tiling is disabled")
         return
