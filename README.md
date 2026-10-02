@@ -4,6 +4,28 @@ Hyprland-like window manager for macOS: tiling, status bar, borders and plugins 
 Fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) (MIT, © Nikita Bobko, see `LICENSE.txt`).
 Design: [`docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md`](docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md)
 
+## Getting started
+
+```sh
+make app-install            # HyprDarwin.app → /Applications, CLI → ~/.local/bin/hypr
+hypr init                   # macOS settings (backed up), starter config at ~/.config/hyprland-darwin/config.toml
+open /Applications/HyprDarwin.app
+```
+
+- `hypr init --undo` restores the macOS settings from before the first `hypr init`.
+- `hypr init --wallpaper ~/Pictures/wall.jpg` also sets the wallpaper.
+- `hypr list-plugins` shows the bar's plugins; logs are in `~/Library/Logs/hyprland-darwin/`.
+- Your own plugins go in `~/.config/hyprland-darwin/plugins/<name>/`. Copy a bundled one, such as `bundled-plugins/example`, to start.
+
+What's built in:
+- **Tiling, workspaces and keybinds:** AeroSpace.
+- **Borders:** gradient on the focused window.
+- **Status bar:** one per screen, with auto-hide and a notch panel.
+- **Plugin host:** JSON over stdin/stdout.
+- **Alt+drag** to move windows.
+- **Permissions window.**
+- **`hypr init`** for setup.
+
 ## Development
 
 Requires Xcode and Swift 6.4 (`.swift-version`). Run `make help` for every target.
