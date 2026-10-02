@@ -6,7 +6,9 @@ import Foundation
     @Published private(set) var statuses: [String: PluginStatus] = [:]
 
     func apply(_ patch: WidgetPatch, to name: String) { widgets[name, default: WidgetState()].apply(patch) }
-    func setStatus(_ status: PluginStatus, for name: String) { statuses[name] = status }
+    func setStatus(_ status: PluginStatus, for name: String) {
+        if statuses[name] != status { statuses[name] = status } // interval plugins report .running after every run
+    }
     func remove(_ name: String) {
         widgets[name] = nil
         statuses[name] = nil
@@ -33,17 +35,20 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
     private let bundledDir: String?
     private let logsDir: URL
     private let runCommand: @MainActor (String, String) -> Void
+    private let initialEvents: @MainActor () -> [(PluginEventKind, String)]
     private var order: [String] = []
     private var plugins: [String: Hosted] = [:]
 
     @MainActor private final class Hosted {
         let resolution: PluginResolution
+        let environment: [String: String]
         var process: PluginProcess? = nil
         var status: PluginStatus
         var restarts = 0
 
-        init(_ resolution: PluginResolution, status: PluginStatus) {
+        init(_ resolution: PluginResolution, environment: [String: String], status: PluginStatus) {
             self.resolution = resolution
+            self.environment = environment
             self.status = status
         }
 
@@ -63,14 +68,16 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
         bundledDir: String? = bundledPluginsDir(),
         logsDir: URL = defaultPluginLogsDir,
         runCommand: @escaping @MainActor (String, String) -> Void = runPluginCommand,
+        initialEvents: @escaping @MainActor () -> [(PluginEventKind, String)] = currentStateEvents,
     ) {
         self.timing = timing
         self.bundledDir = bundledDir
         self.logsDir = logsDir
         self.runCommand = runCommand
+        self.initialEvents = initialEvents
     }
 
-    /// Removed → stopped; changed resolution (dir or manifest) → restarted; unchanged → left running
+    /// Removed → stopped; changed resolution (dir or manifest) or environment → restarted; unchanged → left running
     func sync(names: [String], userDirs: [String], environment: [String: String]) {
         let resolved = resolvePlugins(
             names: names,
@@ -87,8 +94,10 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
         }
         for plugin in resolved {
             // Unchanged and alive: leave it running. A crash-looped (stopped) plugin is retried on reload.
-            if let existing = plugins[plugin.name], existing.resolution == plugin.resolution, !existing.isStopped { continue }
+            if let existing = plugins[plugin.name], existing.resolution == plugin.resolution,
+               existing.environment == environment, !existing.isStopped { continue }
             plugins[plugin.name]?.process?.stop()
+            store.remove(plugin.name) // no stale widget from the previous process (or a plugin that went missing)
             plugins[plugin.name] = makeHosted(plugin, environment)
         }
         order = resolved.map(\.name)
@@ -133,14 +142,14 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
             case .missing(let searched):
                 let status = PluginStatus.missing("no plugin folder in \(searched.joined(separator: ", "))")
                 store.setStatus(status, for: plugin.name)
-                return Hosted(plugin.resolution, status: status)
+                return Hosted(plugin.resolution, environment: environment, status: status)
             case .invalid(let reason):
                 store.setStatus(.invalid(reason), for: plugin.name)
-                return Hosted(plugin.resolution, status: .invalid(reason))
+                return Hosted(plugin.resolution, environment: environment, status: .invalid(reason))
             case .ok(let dir, let manifest):
                 let name = plugin.name
-                let log = PluginLog(name: name, dir: logsDir)
-                let hosted = Hosted(plugin.resolution, status: .starting)
+                let log = PluginLog.shared(name: name, dir: logsDir)
+                let hosted = Hosted(plugin.resolution, environment: environment, status: .starting)
                 store.setStatus(.starting, for: name)
                 let process = PluginProcess(
                     name: name,
@@ -158,6 +167,9 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
                         if case .restarting = status { hosted.restarts += 1 }
                         hosted.status = status
                         store.setStatus(status, for: name)
+                        if status == .running, manifest.mode == .stream { // (re)started: send the current state, not only changes
+                            for (kind, line) in initialEvents() where manifest.events.contains(kind) { hosted.process?.send(line) }
+                        }
                     },
                 )
                 hosted.process = process
@@ -177,4 +189,10 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
                 log.write("dropped line: \(reason)")
         }
     }
+}
+
+/// What a freshly started stream plugin needs to know right away (otherwise a workspace widget waits for the first switch)
+@MainActor func currentStateEvents() -> [(PluginEventKind, String)] {
+    let workspace = focus.workspace.name
+    return [(.workspace, encodePluginEvent(.workspace, ["focused": workspace, "prev": workspace]))]
 }

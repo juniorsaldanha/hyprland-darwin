@@ -12,7 +12,7 @@ final class PluginHostIntegrationTest: XCTestCase {
         root = FileManager.default.temporaryDirectory.appending(path: "plugins-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         ran = []
-        host = PluginHost(timing: PluginTiming(scale: 0.05), bundledDir: nil, logsDir: root.appending(path: "logs")) { [unowned self] in ran.append(($0, $1)) }
+        host = PluginHost(timing: PluginTiming(scale: 0.05), bundledDir: nil, logsDir: root.appending(path: "logs"), runCommand: { [unowned self] in ran.append(($0, $1)) })
     }
 
     override func tearDown() async throws {
@@ -51,6 +51,9 @@ final class PluginHostIntegrationTest: XCTestCase {
     private let stream = "api = 1\nexec = 'run.sh'\nmode = 'stream'\n"
 
     func testIntervalRunGetsEnvAndCwd() throws {
+        // Own host with a 0.5 s timeout: at the shared ×0.05 scale a cold `sh` + `basename` can exceed 50 ms on CI
+        host.stopAll(immediately: true)
+        host = PluginHost(timing: PluginTiming(scale: 0.5), bundledDir: nil, logsDir: root.appending(path: "logs"), runCommand: { _, _ in })
         try plugin("ok", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 1", script: "echo \"{\\\"label\\\":\\\"$HYPR_PLUGIN_NAME:$(basename \"$PWD\")\\\"}\"\n")
         sync(["ok"])
         assertTrue(waitUntil { label("ok") == "ok:ok" })
@@ -206,6 +209,40 @@ final class PluginHostIntegrationTest: XCTestCase {
         assertTrue(waitUntil { host.store.widgets["menu"]?.popup == [PopupItem(label: "Go", run: "workspace 3")] })
         assertTrue(waitUntil { host.store.statuses["menu"] == .running })
         assertEquals(host.store.statuses["ghost"], .missing("no plugin folder in \(root.path)"))
+    }
+
+    func testPluginTurningMissingDropsItsOldWidget() throws {
+        try plugin("gone", manifest: stream, script: "echo '{\"label\":\"old\"}'\nexec sleep 30\n")
+        sync(["gone"])
+        assertTrue(waitUntil { label("gone") == "old" })
+        try FileManager.default.removeItem(at: root.appending(path: "gone"))
+        sync(["gone"])
+        assertNil(host.store.widgets["gone"]) // the bar must not keep showing stale data
+        assertTrue(status("gone")?.hasPrefix("missing") == true)
+    }
+
+    func testExecEnvironmentChangeRestartsPlugins() throws {
+        try plugin("env", manifest: stream, script: "echo $$ > pid\nexec sleep 30\n")
+        host.sync(names: ["env"], userDirs: [root.path], environment: ["PATH": "/usr/bin:/bin", "FOO": "1"])
+        assertTrue(waitUntil { pid("env") != nil })
+        let first = pid("env")!
+        try FileManager.default.removeItem(at: root.appending(path: "env/pid"))
+        host.sync(names: ["env"], userDirs: [root.path], environment: ["PATH": "/usr/bin:/bin", "FOO": "2"])
+        assertTrue(waitUntil { pid("env").map { $0 != first } == true })
+    }
+
+    func testStreamPluginGetsInitialStateOnStart() throws {
+        // without it, a workspace widget shows nothing until the first workspace switch
+        let host = PluginHost(timing: PluginTiming(scale: 0.05), bundledDir: nil, logsDir: root.appending(path: "logs"),
+                              runCommand: { _, _ in }, initialEvents: { [(.workspace, encodePluginEvent(.workspace, ["focused": "3", "prev": "3"]))] })
+        defer { host.stopAll(immediately: true) }
+        try plugin("initial", manifest: stream + "events = ['workspace']", script: """
+            while IFS= read -r line; do
+              case "$line" in *'"focused":"3"'*) echo '{"label":"ws 3"}' ;; esac
+            done
+            """)
+        host.sync(names: ["initial"], userDirs: [root.path], environment: ["PATH": "/usr/bin:/bin"])
+        assertTrue(waitUntil { host.store.widgets["initial"]?.label == "ws 3" })
     }
 
     func testMissingAndInvalidStatuses() throws {

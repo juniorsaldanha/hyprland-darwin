@@ -100,4 +100,33 @@ final class BorderOverlaysIntegrationTest: XCTestCase {
         XCTAssertEqual(c[2], 0x68 / 255, accuracy: 0.001)
         XCTAssertEqual(c[3], 0x80 / 255, accuracy: 0.001)
     }
+
+    func testUnchangedOverlaysAreNotRedrawn() {
+        let a = BorderSpec(windowId: 900_101, frame: CGRect(x: 0, y: 0, width: 300, height: 200), style: .solid(0xFF00_00FF))
+        let b = BorderSpec(windowId: 900_102, frame: CGRect(x: 320, y: 0, width: 300, height: 200), style: .solid(0xFF00_00FF))
+        overlays.apply([a, b], width: 5, radius: 10, primaryScreenHeight: 1000)
+        assertEquals(overlays.redrawCount, 2)
+        overlays.apply([a, b], width: 5, radius: 10, primaryScreenHeight: 1000) // e.g. another window being dragged
+        assertEquals(overlays.redrawCount, 2)
+        let movedB = BorderSpec(windowId: 900_102, frame: CGRect(x: 330, y: 0, width: 300, height: 200), style: .solid(0xFF00_00FF))
+        overlays.apply([a, movedB], width: 5, radius: 10, primaryScreenHeight: 1000)
+        assertEquals(overlays.redrawCount, 3)
+        overlays.apply([a, movedB], width: 6, radius: 10, primaryScreenHeight: 1000) // config change redraws all
+        assertEquals(overlays.redrawCount, 5)
+    }
+
+    func testRestackAgainstAClosedWindowLeavesNoRingOnTop() {
+        let target = makeWindow()
+        pump()
+        overlays.apply([spec(target)], width: 5, radius: 10, primaryScreenHeight: primaryHeight)
+        let staleOrder = order()
+        let id = UInt32(target.windowNumber)
+        target.orderOut(nil)
+        target.close()
+        pump()
+        overlays.restack(order: staleOrder) // snapshot still lists the closed window
+        pump()
+        let overlayId = overlays.overlayWindowId(for: id)!
+        assertFalse(order().contains(overlayId)) // not ordered in front of everything with nothing to sit behind
+    }
 }

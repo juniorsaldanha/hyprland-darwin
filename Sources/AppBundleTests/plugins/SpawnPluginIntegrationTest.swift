@@ -43,4 +43,11 @@ final class SpawnPluginIntegrationTest: XCTestCase {
         assertTrue(text.contains("message 49"))
         XCTAssertLessThanOrEqual(text.utf8.count, 200)
     }
+
+    @MainActor
+    func testOneLogInstancePerFile() {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "logs-\(UUID().uuidString)")
+        assertTrue(PluginLog.shared(name: "gpu", dir: dir) === PluginLog.shared(name: "gpu", dir: dir))
+        assertFalse(PluginLog.shared(name: "gpu", dir: dir) === PluginLog.shared(name: "cpu", dir: dir))
+    }
 }

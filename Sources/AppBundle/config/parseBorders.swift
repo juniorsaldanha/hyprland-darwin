@@ -58,7 +58,9 @@ func parseBorderStyle(_ str: String) -> ResOrStr<BorderStyle> {
 }
 
 func parseArgb(_ s: String) -> ResOrStr<UInt32> {
-    guard s.hasPrefix("0x"), s.count == 10, let value = UInt32(s.dropFirst(2), radix: 16) else {
+    let digits = s.dropFirst(2)
+    // UInt32(_:radix:) alone would accept a sign ('0x+1234567')
+    guard s.hasPrefix("0x") || s.hasPrefix("0X"), s.count == 10, digits.allSatisfy(\.isHexDigit), let value = UInt32(digits, radix: 16) else {
         return .failure("Invalid color '\(s)'. Expected 0xAARRGGBB, e.g. 0xff7aa2f7")
     }
     return .success(value)

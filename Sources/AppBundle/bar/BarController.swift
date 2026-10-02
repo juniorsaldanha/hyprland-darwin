@@ -58,18 +58,21 @@ final class BarPanel: NSPanel {
 
     var panelFrames: [CGRect] { panels.map(\.frame) }
     var panelLevels: [NSWindow.Level] { panels.map(\.level) }
+    var panelAlphas: [CGFloat] { panels.map(\.alphaValue) }
 
     /// Recreates every panel: one bar per current screen, plus notch panels. Disabled → none.
     func sync(_ config: BarConfig, notch: NotchConfig) {
         (panels + notchPanels.map(\.panel)).forEach { $0.orderOut(nil) }
         panels = []
         notchPanels = []
-        autoHide = AutoHideState()
         autoHideEnabled = config.enabled && config.autoHide
+        if !autoHideEnabled { autoHide = AutoHideState() } // otherwise keep it: a screen change mustn't pop the bar over the menu bar
         guard config.enabled else { return }
         for screen in NSScreen.screens {
             let view = BarHostingView(rootView: BarView(tray: TrayMenuModel.shared, store: PluginHost.shared.store, model: BarModel.shared, config: config))
             let panel = BarPanel(frame: barFrame(screenFrame: screen.frame, height: CGFloat(config.height)), tint: config.color, blur: config.blur, content: view)
+            panel.alphaValue = autoHide.isHidden ? 0 : 1
+            panel.ignoresMouseEvents = autoHide.isHidden
             panel.orderFrontRegardless()
             panels.append(panel)
 
@@ -97,7 +100,7 @@ final class BarPanel: NSPanel {
         }
     }
 
-    private func mouseMoved(_ location: CGPoint) {
+    func mouseMoved(_ location: CGPoint) {
         let screens = NSScreen.screens
         if autoHideEnabled, let index = screenIndex(containing: location, frames: screens.map(\.frame)) {
             let screen = screens[index]

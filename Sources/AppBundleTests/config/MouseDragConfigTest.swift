@@ -53,4 +53,12 @@ final class MouseDragConfigTest: XCTestCase {
         )
         assertEquals(result.strErrors, ["[ERROR] mouse-drag.modifier: Modifier must not be empty"])
     }
+
+    func testEmptyPartsInModifierAreErrors() {
+        for value in ["alt-", "-alt", "alt--cmd"] {
+            assertEquals(parseConfig("mouse-drag.modifier = '\(value)'").strErrors, [
+                "[ERROR] mouse-drag.modifier: Invalid modifier '\(value)'. Possible values: alt, cmd, ctrl, shift (combine with '-', e.g. 'cmd-alt')",
+            ])
+        }
+    }
 }

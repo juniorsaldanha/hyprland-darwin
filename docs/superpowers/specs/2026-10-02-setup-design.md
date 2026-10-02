@@ -69,4 +69,4 @@ effect without a logout. `spans-displays` still needs one, and `init` says so.
   - `DefaultsToolIntegrationTest`: write, read and delete round-trip on a throwaway domain.
   - `FontRegistrationIntegrationTest`: the bundled fonts register, and `NSFont(name: "HackNerdFont-Bold")` resolves.
   - `script/test-integration.sh`: runs the real `.debug/aerospace init` and `init --undo` against a throwaway domain and a temp `XDG_CONFIG_HOME`. It checks the backup, the starter config, idempotence and undo. With `--app`, it also checks that the fonts are in the bundle.
-- **Manual (the user):** `hypr init` on their machine changes nothing (already applied); `init --undo` would restore the pre-Hyprspace state, but only if they want it.
+- **Manual (the user):** `hypr init` on their machine changes nothing (Hyprspace already applied the settings), and its backup records those current values. `--undo` therefore restores what was there at the first `hypr init`, not the state before Hyprspace (Hyprspace kept no backup).

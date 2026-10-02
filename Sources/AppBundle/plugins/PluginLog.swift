@@ -10,6 +10,17 @@ final class PluginLog: @unchecked Sendable { // mutable state only touched on `q
     private let keep: Int
     private var writes = 0
 
+    @MainActor private static var instances: [URL: PluginLog] = [:]
+
+    /// One writer per file: two instances appending to the same log could overwrite each other's lines
+    @MainActor static func shared(name: String, dir: URL = defaultPluginLogsDir) -> PluginLog {
+        let url = dir.appending(path: "\(name).log")
+        if let log = instances[url] { return log }
+        let log = PluginLog(name: name, dir: dir)
+        instances[url] = log
+        return log
+    }
+
     init(name: String, dir: URL = defaultPluginLogsDir, limit: Int = 1_048_576, keep: Int = 524_288) {
         url = dir.appending(path: "\(name).log")
         queue = DispatchQueue(label: "hyprdarwin.plugin-log.\(name)")
@@ -48,3 +59,6 @@ final class PluginLog: @unchecked Sendable { // mutable state only touched on `q
         }
     }
 }
+
+/// HyprDarwin's own log (things that would otherwise fail silently): ~/Library/Logs/hyprland-darwin/hyprdarwin.log
+let appLog = PluginLog(name: "hyprdarwin")

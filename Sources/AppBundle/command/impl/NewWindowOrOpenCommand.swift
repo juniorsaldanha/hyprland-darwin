@@ -5,17 +5,31 @@ struct NewWindowOrOpenCommand: Command {
     let args: NewWindowOrOpenCmdArgs
     /*conforms*/ let shouldResetClosedWindowsCache = false
 
-    func run(_ env: CmdEnv, _ io: CmdIo) -> BinaryExitCode {
+    func run(_ env: CmdEnv, _ io: CmdIo) async -> BinaryExitCode {
         let name = args.appName.val
         if let app = NSWorkspace.shared.runningApplications.first(where: { appNameMatches(name, $0.localizedName) }) {
             app.activate(options: .activateIgnoringOtherApps)
             postCmdN(to: app.processIdentifier)
             return .succ
         }
+        // `open -a` exits once the app has launched (can take seconds): non-zero means no such app
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/open")
         process.arguments = ["-a", name]
-        return .from(bool: Result { try process.run() }.isSuccess)
+        process.standardError = FileHandle.nullDevice
+        guard let status = await runAndWait(process) else { return .fail(io.err("Can't run /usr/bin/open")) }
+        return status == 0 ? .succ : .fail(io.err("App '\(name)' not found"))
+    }
+}
+
+/// Exit status, or nil if it can't start. Suspends instead of blocking the main actor.
+func runAndWait(_ process: Process) async -> Int32? {
+    await withCheckedContinuation { cont in
+        process.terminationHandler = { cont.resume(returning: $0.terminationStatus) }
+        do { try process.run() } catch {
+            process.terminationHandler = nil
+            cont.resume(returning: nil)
+        }
     }
 }
 

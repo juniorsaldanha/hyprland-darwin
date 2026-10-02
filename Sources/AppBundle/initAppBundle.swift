@@ -6,6 +6,7 @@ import Foundation
     Task.startUnstructured {
         registerBundledFonts()
         initTerminationHandler()
+        interceptTermination(SIGTERM) // logout, killall: same clean shutdown as Quit (plugins included)
         unsafe _isCli = false
         initServerArgs()
         installNotificationClickHandler()

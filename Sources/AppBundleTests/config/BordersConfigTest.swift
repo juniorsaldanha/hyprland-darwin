@@ -67,4 +67,10 @@ final class BordersConfigTest: XCTestCase {
         assertEquals(parseConfig("borders.radius = 101").strErrors, ["[ERROR] borders.radius: Must be in [0, 100] range"])
         assertEquals(parseConfig("borders.radius = 0").errors, [])
     }
+
+    func testStrictHexDigitsAndUppercasePrefix() {
+        assertEquals(parseArgb("0X80414868"), .success(0x8041_4868))
+        assertEquals(parseArgb("0x+1234567"), .failure("Invalid color '0x+1234567'. Expected 0xAARRGGBB, e.g. 0xff7aa2f7"))
+        assertEquals(parseArgb("0x-1234567"), .failure("Invalid color '0x-1234567'. Expected 0xAARRGGBB, e.g. 0xff7aa2f7"))
+    }
 }

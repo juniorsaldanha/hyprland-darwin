@@ -3,6 +3,7 @@ import Common
 import SwiftUI
 
 @MainActor private var permissionsWindow: NSWindow? = nil
+@MainActor private var pollTask: Task<Void, Never>? = nil
 
 /// Plain NSWindow (not a SwiftUI scene) so it can be opened from anywhere, including during startup.
 @MainActor func showPermissionsWindow() {
@@ -17,6 +18,14 @@ import SwiftUI
     NSApp.activate(ignoringOtherApps: true)
     permissionsWindow?.center()
     permissionsWindow?.makeKeyAndOrderFront(nil)
+    // Re-check every second only while the window is visible (closing it ends the loop)
+    pollTask?.cancel()
+    pollTask = Task.startUnstructured { @MainActor in
+        while !Task.isCancelled, permissionsWindow?.isVisible == true {
+            await PermissionsModel.shared.refresh()
+            try? await Task.sleep(for: .seconds(1))
+        }
+    }
 }
 
 private struct PermissionsView: View {
@@ -45,12 +54,6 @@ private struct PermissionsView: View {
         }
         .padding(24)
         .frame(width: 520)
-        .task { // Re-check every second while the window is open
-            while !Task.isCancelled {
-                await model.refresh()
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
     }
 }
 

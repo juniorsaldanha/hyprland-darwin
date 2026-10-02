@@ -41,8 +41,12 @@ private let permissionsWindowShownKey = "permissionsWindowShownOnce"
             TrayMenuModel.shared.axPermissionStatus = .granted
             rebuildModifierDragTap()
             if enableServer {
-                try? await runLightSession(.permissionMonitor, .forceRun) {
-                    _ = await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .on)).run(.defaultEnv, .emptyStdin)
+                do {
+                    try await runLightSession(.permissionMonitor, .forceRun) {
+                        _ = await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .on)).run(.defaultEnv, .emptyStdin)
+                    }
+                } catch {
+                    appLog.write("permission monitor: re-enabling tiling failed: \(error)")
                 }
             }
     }
