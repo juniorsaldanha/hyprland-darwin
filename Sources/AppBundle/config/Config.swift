@@ -53,6 +53,9 @@ struct Config: ConvenienceMutable {
     var focusFollowsMouse: FocusFollowsMouse = FocusFollowsMouse()
     var mouseDrag: MouseDrag = MouseDrag()
     var borders: BordersConfig = BordersConfig()
+    var bar: BarConfig = BarConfig()
+    var notch: NotchConfig = NotchConfig()
+    var plugins: PluginsConfig = PluginsConfig()
 
     var onFocusChanged: Shell<any Command> = .empty
     // var onFocusedWorkspaceChanged: [any Command] = []

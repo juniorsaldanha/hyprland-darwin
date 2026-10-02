@@ -26,4 +26,18 @@ final class HyprspaceConfigIntegrationTest: XCTestCase {
         assertEquals(result.errors, [])
         assertTrue(result.config.borders.enabled)
     }
+
+    func testUserConfigWithBarAndPluginsSectionsParses() {
+        let toml = try! String(contentsOf: projectRoot.appending(component: "docs/config-examples/hyprspace-migrated-config.toml"), encoding: .utf8)
+        let result = parseConfig(toml + """
+
+            [bar]
+                left = ['workspaces', 'front-app']
+                right = ['clock', 'battery', 'cpu', 'ram', 'disk']
+            [plugins]
+                dirs = ['~/.config/hyprland-darwin/plugins']
+            """)
+        assertEquals(result.errors, [])
+        assertEquals(result.config.placedPluginNames, ["clock", "battery", "cpu", "ram", "disk"])
+    }
 }
