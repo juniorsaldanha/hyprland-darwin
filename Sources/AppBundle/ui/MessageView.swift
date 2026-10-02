@@ -106,6 +106,18 @@ public final class MessageModel: ObservableObject {
     private init() {}
 }
 
+/// Pure. A second message on top of one already shown: both bodies stay visible (the config's errors aren't hidden)
+func adding(_ new: Message, to existing: Message?) -> Message {
+    guard let existing else { return new }
+    return Message(
+        type: existing.type,
+        title: existing.title,
+        description: existing.description,
+        body: existing.body + "\n\n" + new.description + ": " + new.body,
+        containsWarnings: existing.containsWarnings || new.containsWarnings,
+    )
+}
+
 public enum MessageType {
     case config
 }

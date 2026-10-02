@@ -115,6 +115,17 @@ final class BorderOverlaysIntegrationTest: XCTestCase {
         assertEquals(overlays.redrawCount, 5)
     }
 
+    /// macOS can move an overlay itself (a display unplugged): the next plan puts it back even though the ring is unchanged
+    func testAMovedOverlayIsPutBack() throws {
+        let a = BorderSpec(windowId: 900_201, frame: CGRect(x: 0, y: 0, width: 300, height: 200), style: .solid(0xFF00_00FF))
+        overlays.apply([a], width: 5, radius: 10, primaryScreenHeight: 1000)
+        let placed = try XCTUnwrap(overlays.frame(for: 900_201))
+        let window = try XCTUnwrap(NSApp.window(withWindowNumber: Int(try XCTUnwrap(overlays.overlayWindowId(for: 900_201)))))
+        window.setFrameOrigin(NSPoint(x: placed.minX + 500, y: placed.minY))
+        overlays.apply([a], width: 5, radius: 10, primaryScreenHeight: 1000)
+        assertEquals(overlays.frame(for: 900_201), placed)
+    }
+
     func testRestackAgainstAClosedWindowLeavesNoRingOnTop() {
         let target = makeWindow()
         pump()

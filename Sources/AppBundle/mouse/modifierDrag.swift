@@ -37,11 +37,11 @@ private struct DragState {
     ) else {
         // Without the tap alt+drag silently does nothing: say so
         appLog.write("mouse-drag: macOS refused the event tap, alt+drag is off")
-        MessageModel.shared.message = Message(
+        MessageModel.shared.message = adding(Message(
             description: "Mouse drag",
             body: "alt+drag (mouse-drag) is off: macOS refused HyprDarwin's event tap. Check that HyprDarwin is enabled in System Settings → Privacy & Security → Accessibility, then reload the config.",
             containsWarnings: true,
-        )
+        ), to: MessageModel.shared.message)
         return
     }
     let source = CFMachPortCreateRunLoopSource(nil, tap, 0)

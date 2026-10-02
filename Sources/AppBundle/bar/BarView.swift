@@ -106,7 +106,7 @@ struct BarItemView: View {
                 Text("⚠ \(name)").font(labelFont).foregroundColor(.orange).padding(.horizontal, 5).help(reason)
                     .contentShape(Rectangle())
                     // Tooltips need an active app, and HyprDarwin never is: show the reason on click instead
-                    .onTapGesture { showMenu([NSMenuItem(title: "\(name): \(reason)", action: nil, keyEquivalent: "")]) }
+                    .onTapGesture { showMenu(problemMenuItems(name: name, reason: reason)) }
         }
     }
 }
@@ -190,11 +190,50 @@ final class RightClickView: NSView {
     menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
 }
 
+/// The ⚠ widget's menu: the reason (wrapped, click copies it) and the plugin's log
+@MainActor func problemMenuItems(name: String, reason: String) -> [NSMenuItem] {
+    let text = "\(name): \(reason)"
+    let reasonItem = NSMenuItem(title: text, action: #selector(PopupTarget.copy(_:)), keyEquivalent: "")
+    reasonItem.attributedTitle = NSAttributedString(string: wrapped(text, width: 60), attributes: [.font: NSFont.menuFont(ofSize: 0)])
+    reasonItem.toolTip = "Click to copy"
+    reasonItem.representedObject = text
+    let logItem = NSMenuItem(title: "Open log", action: #selector(PopupTarget.openLog(_:)), keyEquivalent: "")
+    logItem.representedObject = defaultPluginLogsDir.appending(path: "\(name).log")
+    for item in [reasonItem, logItem] { item.target = PopupTarget.shared }
+    return [reasonItem, logItem]
+}
+
+/// Pure. Greedy word wrap; a word longer than `width` (a path) gets its own line
+func wrapped(_ text: String, width: Int) -> String {
+    var lines: [String] = []
+    var line = ""
+    for word in text.split(separator: " ") {
+        if !line.isEmpty, line.count + 1 + word.count > width {
+            lines.append(line)
+            line = ""
+        }
+        line += (line.isEmpty ? "" : " ") + word
+    }
+    if !line.isEmpty { lines.append(line) }
+    return lines.joined(separator: "\n")
+}
+
 @MainActor private final class PopupTarget: NSObject {
     static let shared = PopupTarget()
 
     @objc func choose(_ sender: NSMenuItem) {
         guard let pair = sender.representedObject as? [String], pair.count == 2 else { return }
         runPluginCommand(pair[0], pair[1])
+    }
+
+    @objc func copy(_ sender: NSMenuItem) {
+        guard let text = sender.representedObject as? String else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    @objc func openLog(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.open(FileManager.default.fileExists(atPath: url.path) ? url : url.deletingLastPathComponent())
     }
 }

@@ -62,8 +62,17 @@ test "$(/usr/bin/defaults read "$init_domain" spans-displays)" = keep-me || fail
 grep -q spans-displays "$init_home/hyprland-darwin/setup-backup.json" && fail "init recorded a value it didn't change"
 run_init --undo || fail "undo failed"
 test "$(/usr/bin/defaults read "$init_domain" spans-displays)" = keep-me || fail "undo touched a non-boolean value"
+# A setting stored as the integer 0/1 is a boolean to macOS: init applies it, undo restores it
+/usr/bin/defaults delete "$init_domain" expose-group-apps > /dev/null 2>&1 # else the type stays boolean from the undo above
+/usr/bin/defaults write "$init_domain" expose-group-apps -int 0
+run_init 2> /dev/null || fail "init failed with an integer value present"
+test "$(/usr/bin/defaults read "$init_domain" expose-group-apps)" = 1 || fail "init skipped a setting stored as the integer 0"
+run_init --undo || fail "undo failed"
+test "$(/usr/bin/defaults read "$init_domain" expose-group-apps)" = 0 || fail "undo didn't restore the integer setting"
 # A missing wallpaper is an error (checked even in test mode, where the wallpaper itself is never changed)
 run_init --wallpaper /nonexistent/wall.jpg 2> /dev/null && fail "init must reject a missing wallpaper"
+/usr/bin/defaults read "$init_domain" _HIHideMenuBar > /dev/null 2>&1 && fail "a rejected wallpaper must not change any setting"
+test ! -f "$init_home/hyprland-darwin/setup-backup.json" || fail "a rejected wallpaper must not write a backup"
 # Test mode without a temp config dir must refuse: it would write the real ~/.config
 HYPR_INIT_TEST_DOMAIN="$init_domain" XDG_CONFIG_HOME= "$cli" init > /dev/null 2>&1 && fail "test mode without XDG_CONFIG_HOME must refuse"
 "$cli" --help | grep -q "^ *init " || fail "'init' missing from --help"

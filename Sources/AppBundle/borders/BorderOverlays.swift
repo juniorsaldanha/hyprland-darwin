@@ -23,13 +23,14 @@ import QuartzCore
         for spec in plan {
             let overlay = overlays[spec.windowId] ?? makeOverlay()
             overlays[spec.windowId] = overlay
-            let ring = DrawnRing(spec: spec, width: width, radius: radius, primaryScreenHeight: primaryScreenHeight)
-            if drawn[spec.windowId] == ring { continue }
-            drawn[spec.windowId] = ring
             let frame = overlayFrame(windowFrame: spec.frame, width: width, primaryScreenHeight: primaryScreenHeight)
-            overlay.setFrame(frame, display: false)
             // A new overlay isn't on screen yet, so its own backingScaleFactor would be the main screen's
             let scale = NSScreen.screens.first { $0.frame.intersects(frame) }?.backingScaleFactor ?? overlay.backingScaleFactor
+            let ring = DrawnRing(spec: spec, width: width, radius: radius, primaryScreenHeight: primaryScreenHeight, scale: scale)
+            // Unchanged ring still in place: skip. Scale: a display switched HiDPI on/off. Frame: macOS moved the overlay.
+            if drawn[spec.windowId] == ring, overlay.frame == frame { continue }
+            drawn[spec.windowId] = ring
+            overlay.setFrame(frame, display: false)
             (overlay.contentView as? BorderView)?.update(style: spec.style, width: width, radius: radius, scale: scale)
             redrawCount += 1
         }
@@ -74,6 +75,8 @@ private struct DrawnRing: Equatable {
     let radius: CGFloat
     // periphery:ignore
     let primaryScreenHeight: CGFloat
+    // periphery:ignore
+    let scale: CGFloat
 }
 
 private func windowExists(_ id: UInt32) -> Bool {

@@ -80,3 +80,16 @@ final class ModifierDragTargetTest: XCTestCase {
         assertTrue(try await isManipulatedWithMouse(window))
     }
 }
+
+final class MessageMergeTest: XCTestCase {
+    /// The alt+drag warning arrives right after a config reload: it must not hide the config's own errors
+    func testAWarningIsAddedToAnExistingMessage() {
+        let config = Message(body: "[ERROR] gaps.inner: bad value", containsWarnings: false)
+        let merged = adding(Message(description: "Mouse drag", body: "alt+drag is off", containsWarnings: true), to: config)
+        assertTrue(merged.body.contains("[ERROR] gaps.inner: bad value"))
+        assertTrue(merged.body.contains("alt+drag is off"))
+        assertTrue(merged.containsWarnings)
+        let alone = Message(description: "Mouse drag", body: "alt+drag is off", containsWarnings: true)
+        assertEquals(adding(alone, to: nil), alone)
+    }
+}

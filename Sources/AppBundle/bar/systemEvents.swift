@@ -80,6 +80,7 @@ func currentVolumeLevel() -> Int? {
     var address = volumeAddress
     if let old = unsafe volumeListener { // one listener at a time: switching back to a device must not stack blocks
         _ = unsafe AudioObjectRemovePropertyListenerBlock(old.device, &address, DispatchQueue.main, old.block)
+        unsafe volumeListener = nil // if adding on the new device fails, switching back must still re-add
     }
     let block: AudioObjectPropertyListenerBlock = { _, _ in MainActor.assumeIsolated { emitVolumeIfChanged() } }
     if unsafe AudioObjectAddPropertyListenerBlock(device, &address, DispatchQueue.main, block) == noErr {

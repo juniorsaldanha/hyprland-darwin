@@ -21,7 +21,7 @@ while test $# -gt 0; do
 done
 
 identity="${HYPRDARWIN_CODESIGN_IDENTITY:-hyprdarwin-codesign-certificate}"
-if test "$identity" != "-" && ! security find-identity -v -p codesigning | grep -qF "\"$identity\""; then
+if test "$identity" != "-" && ! security find-identity -p codesigning | grep -qF "\"$identity\""; then
     echo "No code-signing identity '$identity' in your keychain." > /dev/stderr
     echo "Create it: Keychain Access → Certificate Assistant → Create a Certificate… (Name: $identity, Self Signed Root, Code Signing)," > /dev/stderr
     echo "or build ad-hoc with HYPRDARWIN_CODESIGN_IDENTITY=- (Accessibility permission then resets on every rebuild)." > /dev/stderr

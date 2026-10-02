@@ -2,7 +2,8 @@ import AppKit
 import Common
 import SwiftUI
 
-@MainActor private var permissionsWindow: NSWindow? = nil
+@MainActor var permissionsWindow: NSWindow? = nil
+@MainActor private(set) var permissionsRefreshCount = 0 // observable by tests
 @MainActor private var pollTask: Task<Void, Never>? = nil
 
 /// Plain NSWindow (not a SwiftUI scene) so it can be opened from anywhere, including during startup.
@@ -14,15 +15,20 @@ import SwiftUI
         window.isReleasedWhenClosed = false
         window.level = .normal // Not .floating: it would cover System Settings after "Open Settings"
         permissionsWindow = window
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+            MainActor.assumeIsolated { pollTask?.cancel() }
+        }
     }
     NSApp.activate(ignoringOtherApps: true)
     permissionsWindow?.center()
     permissionsWindow?.makeKeyAndOrderFront(nil)
-    // Re-check every second only while the window is visible (closing it ends the loop)
+    // Re-check every second until the window is closed. Not `isVisible`: that is false while hidden (Cmd-H), and the
+    // loop would never restart, leaving stale ✓/✗ when the window comes back.
     pollTask?.cancel()
     pollTask = Task.startUnstructured { @MainActor in
-        while !Task.isCancelled, permissionsWindow?.isVisible == true {
+        while !Task.isCancelled {
             await PermissionsModel.shared.refresh()
+            permissionsRefreshCount += 1
             try? await Task.sleep(for: .seconds(1))
         }
     }

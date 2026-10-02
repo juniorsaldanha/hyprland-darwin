@@ -28,6 +28,13 @@ func runInit(_ args: [String]) -> Int32 {
         index += 1
     }
 
+    // Checked before anything changes: a typo in the path must not leave the settings half applied
+    let wallpaperUrl = wallpaper.map { URL(filePath: ($0 as NSString).expandingTildeInPath) }
+    if let wallpaperUrl, !FileManager.default.fileExists(atPath: wallpaperUrl.path) {
+        eprint("Wallpaper: no file at \(wallpaperUrl.path). Nothing was changed.")
+        return EXIT_CODE_TWO
+    }
+
     let testDomain = ProcessInfo.processInfo.environment["HYPR_INIT_TEST_DOMAIN"]
     if testDomain != nil, (ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"] ?? "").isEmpty {
         eprint("HYPR_INIT_TEST_DOMAIN needs XDG_CONFIG_HOME too: otherwise the real config dir would be written")
@@ -97,12 +104,8 @@ func runInit(_ args: [String]) -> Int32 {
         exitCode = 1
     }
 
-    if let wallpaper {
-        let url = URL(filePath: (wallpaper as NSString).expandingTildeInPath)
-        if !FileManager.default.fileExists(atPath: url.path) {
-            eprint("  ✗ wallpaper: no file at \(url.path)")
-            exitCode = 1
-        } else if testDomain != nil {
+    if let url = wallpaperUrl {
+        if testDomain != nil {
             print("  ✓ wallpaper path ok (not applied in test mode)")
         } else if let error = setWallpaper(url) {
             eprint("  ✗ wallpaper: \(error)")
