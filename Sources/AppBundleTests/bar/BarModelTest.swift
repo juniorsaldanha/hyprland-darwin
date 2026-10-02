@@ -21,6 +21,26 @@ final class BarModelTest: XCTestCase {
         assertEquals(items.map(\.id), ["workspace:1", "workspace:2", "chevron", "front-app", "plugin:clock"])
     }
 
+    /// One pill per monitor, left → right, separated; the focused monitor's pill is highlighted (`1 | 2*`)
+    func testVisibleModeShowsOneWorkspacePerMonitor() {
+        let monitors = [
+            TrayItem(type: .mode, name: "SERVICE", isActive: true, hasFullscreenWindows: false),
+            TrayItem(type: .workspace, name: "1", isActive: false, hasFullscreenWindows: false),
+            TrayItem(type: .workspace, name: "6", isActive: true, hasFullscreenWindows: false),
+        ]
+        let items = barItems(
+            names: ["workspaces", "chevron"],
+            workspaces: [ws("1"), ws("2"), ws("6", focused: true)],
+            monitors: monitors,
+            workspacesMode: .visible,
+            frontApp: nil,
+            widgets: [:],
+            statuses: [:],
+        )
+        assertEquals(items, [.workspace(name: "1", isFocused: false), .separator(1), .workspace(name: "6", isFocused: true), .chevron])
+        assertEquals(Set(items.map(\.id)).count, items.count)
+    }
+
     func testHiddenOrEmptyWidgetsAndMissingFrontAppTakeNoSpace() {
         let items = barItems(
             names: ["front-app", "a", "b", "c"],

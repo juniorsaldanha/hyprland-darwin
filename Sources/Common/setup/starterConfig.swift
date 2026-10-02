@@ -46,6 +46,7 @@ public let starterConfigToml = """
     [bar]
         enabled = true
         left = ['workspaces', 'chevron', 'front-app']
+        # workspaces = 'visible'  # only the workspace on each monitor, e.g. 1 │ 2 (default 'all')
         right = ['disk', 'ram', 'gpu', 'cpu', 'network', 'volume', 'battery', 'clock']
 
     [mode.main.binding]

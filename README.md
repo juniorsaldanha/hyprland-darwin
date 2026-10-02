@@ -20,7 +20,7 @@ open /Applications/HyprDarwin.app
 What's built in:
 - **Tiling, workspaces and keybinds:** AeroSpace.
 - **Borders:** gradient on the focused window.
-- **Status bar:** one per screen, with auto-hide and a notch panel.
+- **Status bar:** one per screen, with auto-hide and a notch panel. `bar.workspaces = 'visible'` shows only the workspace on each monitor.
 - **Plugin host:** JSON over stdin/stdout.
 - **Alt+drag** to move windows.
 - **Permissions window.**

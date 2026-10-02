@@ -15,6 +15,12 @@ final class BarConfigTest: XCTestCase {
         assertEquals(bar.labelSize, 14)
         assertEquals(bar.foreground, 0xE1E1_E1E1)
         assertTrue(bar.autoHide)
+        assertEquals(bar.workspaces, .all)
+    }
+
+    func testWorkspacesMode() {
+        assertEquals(parseConfig("bar.workspaces = 'visible'").config.bar.workspaces, .visible)
+        assertEquals(parseConfig("bar.workspaces = 'some'").strErrors, ["[ERROR] bar.workspaces: Can't parse 'some'.\nPossible values: (all|visible)"])
     }
 
     func testFullSection() {

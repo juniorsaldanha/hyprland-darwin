@@ -13,6 +13,12 @@ struct BarConfig: ConvenienceMutable, Equatable {
     var left: [String] = []
     var center: [String] = []
     var right: [String] = [] // displayed left → right
+    var workspaces: BarWorkspacesMode = .all
+}
+
+enum BarWorkspacesMode: String, CaseIterable, Equatable, Sendable {
+    case all // every workspace (persistent + non-empty + visible)
+    case visible // the workspace shown on each monitor, left → right
 }
 
 private let barParserTable: [String: any ParserProtocol<BarConfig>] = [
@@ -28,6 +34,9 @@ private let barParserTable: [String: any ParserProtocol<BarConfig>] = [
     "left": Parser(\.left, parseArrayOfStrings),
     "center": Parser(\.center, parseArrayOfStrings),
     "right": Parser(\.right, parseArrayOfStrings),
+    "workspaces": Parser(\.workspaces) { raw, backtrace in
+        parseString(raw, backtrace).flatMap { parseEnum($0, BarWorkspacesMode.self).toParsedConfig(backtrace) }
+    },
 ]
 
 func parseBar(_ raw: OrderedJson, _ backtrace: ConfigBacktrace, _ c: inout ConfigParserContext) -> BarConfig {

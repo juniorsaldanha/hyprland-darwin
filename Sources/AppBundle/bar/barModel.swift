@@ -2,6 +2,7 @@ import AppKit
 
 enum BarItem: Equatable, Identifiable {
     case workspace(name: String, isFocused: Bool)
+    case separator(Int) // between monitors in `workspaces = 'visible'`
     case chevron
     case frontApp(String)
     case plugin(name: String, state: WidgetState)
@@ -10,6 +11,7 @@ enum BarItem: Equatable, Identifiable {
     var id: String {
         switch self {
             case .workspace(let name, _): "workspace:\(name)"
+            case .separator(let index): "separator:\(index)"
             case .chevron: "chevron"
             case .frontApp: "front-app"
             case .plugin(let name, _): "plugin:\(name)"
@@ -22,12 +24,18 @@ enum BarItem: Equatable, Identifiable {
 func barItems(
     names: [String],
     workspaces: [WorkspaceViewModel],
+    monitors: [TrayItem] = [], // left → right, as in the menu bar icon
+    workspacesMode: BarWorkspacesMode = .all,
     frontApp: String?,
     widgets: [String: WidgetState],
     statuses: [String: PluginStatus],
 ) -> [BarItem] {
     names.flatMap { name -> [BarItem] in
         switch name {
+            case "workspaces" where workspacesMode == .visible:
+                return monitors.filter { $0.type == .workspace }.enumerated().flatMap { index, monitor -> [BarItem] in
+                    (index == 0 ? [] : [.separator(index)]) + [.workspace(name: monitor.name, isFocused: monitor.isActive)]
+                }
             case "workspaces":
                 return workspaces.map { .workspace(name: $0.name, isFocused: $0.isFocused) }
             case "chevron":

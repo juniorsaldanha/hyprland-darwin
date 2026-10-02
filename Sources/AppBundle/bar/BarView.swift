@@ -27,7 +27,15 @@ struct BarView: View {
 
     private func section(_ names: [String]) -> some View {
         HStack(spacing: 0) {
-            ForEach(barItems(names: names, workspaces: tray.workspaces, frontApp: model.frontApp, widgets: store.widgets, statuses: store.statuses)) { item in
+            ForEach(barItems(
+                names: names,
+                workspaces: tray.workspaces,
+                monitors: tray.trayItems,
+                workspacesMode: config.workspaces,
+                frontApp: model.frontApp,
+                widgets: store.widgets,
+                statuses: store.statuses,
+            )) { item in
                 BarItemView(item: item, config: config)
             }
         }
@@ -73,6 +81,8 @@ struct BarItemView: View {
                     .padding(.horizontal, 5)
                     .contentShape(Rectangle())
                     .onTapGesture { focusWorkspaceFromBar(name) }
+            case .separator:
+                Text("│").font(labelFont).foregroundColor(foreground.opacity(0.5))
             case .chevron:
                 BarIcon(icon: "\u{F054}", config: config, color: foreground).padding(.leading, 8).padding(.trailing, 4).padding(.horizontal, 5)
             case .frontApp(let name):
