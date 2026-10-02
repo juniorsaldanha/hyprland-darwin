@@ -293,7 +293,7 @@ final class PluginManifestTest: XCTestCase {
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'interval'\ninterval = 0"), .failure("interval mode needs 'interval' >= 1"))
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'stream'\nevents = ['click']"), .failure("unknown event 'click'"))
         assertEquals(parse("api = 1\nexec = 'x'\nmode = 'stream'\nevents = 'focus'"), .failure("'events' must be an array"))
-        assertTrue(parse("api = = 1").errorOrNil?.hasPrefix("plugin.toml: ") == true)
+        assertTrue(parse("api = = 1").failureOrNil?.hasPrefix("plugin.toml: ") == true)
     }
 
     func testResolveUserDirBeatsBundledAndFirstUserDirWins() {
@@ -944,7 +944,7 @@ final class SpawnPluginIntegrationTest: XCTestCase {
         let devNull = open("/dev/null", O_RDWR)
         defer { close(devNull) }
         let result = spawnPlugin(path: "/nonexistent/x", environment: [:], directory: "/", stdin: devNull, stdout: devNull, stderr: devNull)
-        assertNotNil(result.errorOrNil)
+        assertNotNil(result.failureOrNil)
     }
 
     func testPluginLogWritesAndTrims() throws {
