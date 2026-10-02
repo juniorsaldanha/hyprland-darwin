@@ -38,7 +38,8 @@ brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprla
 brew install --cask hyprdarwin
 ```
 
-This installs `HyprDarwin.app` and the `hypr` CLI. Upgrade with `brew upgrade --cask hyprdarwin`.
+This installs `HyprDarwin.app`, the `hypr` CLI, shell completion for zsh, bash and fish, and man pages
+(`man hypr`, `man hypr-workspace`, …). Upgrade with `brew upgrade --cask hyprdarwin`.
 
 > [!NOTE]
 > Releases are signed ad hoc, not with an Apple Developer ID. The cask removes the quarantine flag so macOS will open

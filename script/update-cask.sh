@@ -23,11 +23,17 @@ cask "hyprdarwin" do
 
   app "HyprDarwin.app"
   binary "hypr"
+  binary "shell-completion/zsh/_hypr", target: "#{HOMEBREW_PREFIX}/share/zsh/site-functions/_hypr"
+  binary "shell-completion/bash/hypr", target: "#{HOMEBREW_PREFIX}/etc/bash_completion.d/hypr"
+  binary "shell-completion/fish/hypr.fish", target: "#{HOMEBREW_PREFIX}/share/fish/vendor_completions.d/hypr.fish"
 
   # Signed ad hoc (no Apple Developer ID): without this, Gatekeeper refuses to open it
-  postflight do
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/HyprDarwin.app", "#{staged_path}/hypr"]
+  postflight_steps do
+    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/HyprDarwin.app"], must_succeed: false
+    run "/usr/bin/xattr", args: ["-d", "com.apple.quarantine", "{{staged_path}}/hypr"], must_succeed: false
   end
+
+  Dir["#{staged_path}/manpage/*.1"].each { |page| manpage page }
 
   uninstall quit: "dev.hyprdarwin"
 

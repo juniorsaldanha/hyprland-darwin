@@ -1,10 +1,10 @@
-# EBNF-like grammar of aerospace CLI args to generate shell completion. Managed by https://github.com/adaszko/complgen
+# EBNF-like grammar of hypr CLI args to generate shell completion. Managed by https://github.com/adaszko/complgen
 # Run ./build-shell-completion.sh to generate shell completion
-aerospace <subcommand>;
-aerospace -v;
-aerospace --version;
-aerospace --help;
-aerospace -h;
+hypr <subcommand>;
+hypr -v;
+hypr --version;
+hypr --help;
+hypr -h;
 
 <subcommand> ::=
 
@@ -14,7 +14,7 @@ aerospace -h;
 
     | close-all-windows-but-current [--quit-if-last-window]
 
-    | config [--json | --keys]... --get {{{ aerospace config --major-keys }}} [--json | --keys]...
+    | config [--json | --keys]... --get {{{ hypr config --major-keys }}} [--json | --keys]...
     | config --major-keys
     | config --all-keys
     | config --config-path
@@ -50,7 +50,11 @@ aerospace -h;
 
     | join-with [--window-id <window_id>] (left|down|up|right)
 
+    | init [--undo | --wallpaper <PATH>]...
+
     | layout [--window-id <window_id>|--root|--workspace <workspace>|--fail-if-noop]... (<layouts>)... [--window-id <window_id>|--root|--workspace <workspace>|--fail-if-noop]...
+
+    | new-window-or-open <app_name>
 
     | macos-native-fullscreen [--fail-if-noop|--window-id <window_id>]... [on|off] [--fail-if-noop|--window-id <window_id>]...
 
@@ -107,6 +111,8 @@ aerospace -h;
 
     | list-modes [--current|--json|--count]...
 
+    | list-plugins [--json]
+
     | list-monitors [--focused [no] | --mouse [no] | --format <output_format> | --count | --json]...
 
     | list-windows [<list_windows_filter_flag> | --format <output_format> | --count | --json]...
@@ -118,10 +124,10 @@ aerospace -h;
     | subscribe [--all|--no-send-initial] <event>... [--all|--no-send-initial]
     ;
 
-<window_id> ::= {{{ aerospace list-windows --all --format '%{window-id}%{tab}%{app-name} - %{window-title}' }}};
-<binding> ::= {{{ aerospace config --get mode --keys | xargs -I{} aerospace config --get mode.{}.binding --keys }}};
-<mode_id> ::= {{{ aerospace config --get mode --keys }}};
-<workspace> ::= {{{ aerospace list-workspaces --monitor all --empty no }}};
+<window_id> ::= {{{ hypr list-windows --all --format '%{window-id}%{tab}%{app-name} - %{window-title}' }}};
+<binding> ::= {{{ hypr config --get mode --keys | xargs -I{} hypr config --get mode.{}.binding --keys }}};
+<mode_id> ::= {{{ hypr config --get mode --keys }}};
+<workspace> ::= {{{ hypr list-workspaces --monitor all --empty no }}};
 <number> ::= {{{ true }}};
 <monitor_pattern> ::= {{{ true }}};
 <layouts> ::= h_tiles|v_tiles|h_accordion|v_accordion|tiles|accordion|horizontal|vertical|tiling|floating;
@@ -148,8 +154,9 @@ aerospace -h;
     ;
 <output_format> ::= {{{ true }}};
 
-<app_bundle_id> ::= {{{ aerospace list-apps --format '%{app-bundle-id}%{tab}%{app-name}' }}};
-<pid> ::= {{{ aerospace list-apps --format '%{app-pid}%{tab}%{app-name}' }}};
-<monitor_id> ::= all | mouse | focused | {{{ aerospace list-monitors --format '%{monitor-id}%{tab}%{monitor-name}' }}};
+<app_bundle_id> ::= {{{ hypr list-apps --format '%{app-bundle-id}%{tab}%{app-name}' }}};
+<app_name> ::= {{{ hypr list-apps --format '%{app-name}' }}};
+<pid> ::= {{{ hypr list-apps --format '%{app-pid}%{tab}%{app-name}' }}};
+<monitor_id> ::= all | mouse | focused | {{{ hypr list-monitors --format '%{monitor-id}%{tab}%{monitor-name}' }}};
 
 <event> ::= focus-changed | focused-monitor-changed | focused-workspace-changed | mode-changed | window-detected | binding-triggered;

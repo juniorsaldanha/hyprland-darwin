@@ -58,6 +58,8 @@ jobs:
         run: HYPRDARWIN_CODESIGN_IDENTITY=- ./build-app.sh --no-install
       - name: Integration tests against the app bundle
         run: ./build-debug.sh && ./script/test-integration.sh --skip-xctest --app .release/HyprDarwin.app # XCTest already ran in the test job
+      - name: Shell completion and man pages
+        run: brew install asciidoctor && ./build-shell-completion.sh && ./script/build-man.sh
       - name: Package
         run: cd .release && zip -qry HyprDarwin.zip HyprDarwin.app hypr
       - uses: actions/upload-artifact@v5

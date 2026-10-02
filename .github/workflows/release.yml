@@ -28,12 +28,17 @@ jobs:
         run: HYPRDARWIN_CODESIGN_IDENTITY=- ./build-app.sh --no-install --version "${GITHUB_REF_NAME#v}"
       - name: Check the bundle
         run: ./script/test-integration.sh --skip-xctest --app .release/HyprDarwin.app
+      - name: Shell completion and man pages
+        run: brew install asciidoctor && ./build-shell-completion.sh && ./script/build-man.sh
       - name: Package
         id: package
         run: |
           version="${GITHUB_REF_NAME#v}"
           zip="HyprDarwin-$version.zip"
-          (cd .release && zip -qry "$zip" HyprDarwin.app hypr)
+          mkdir -p .release/shell-completion .release/manpage
+          cp -R .shell-completion/* .release/shell-completion/
+          cp .man/*.1 .release/manpage/
+          (cd .release && zip -qry "$zip" HyprDarwin.app hypr shell-completion manpage)
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "zip=.release/$zip" >> "$GITHUB_OUTPUT"
           echo "sha=$(shasum -a 256 ".release/$zip" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
