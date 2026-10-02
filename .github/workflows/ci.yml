@@ -2,9 +2,8 @@ name: ci
 
 on:
   push:
-    branches: ["**"] # every branch gets CI, not only main
-  pull_request:
     branches: [main]
+  pull_request: # every branch with a PR; no double run on push + PR
   workflow_dispatch:
 
 concurrency:

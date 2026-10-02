@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Source of resources/Assets.xcassets/AppIcon.appiconset/icon.png: rsvg-convert -w 1024 -h 1024 resources/icon.svg -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a0a4f"/>
+      <stop offset="0.55" stop-color="#14052b"/>
+      <stop offset="1" stop-color="#07010f"/>
+    </linearGradient>
+    <radialGradient id="haze" cx="0.5" cy="0.62" r="0.55">
+      <stop offset="0" stop-color="#b026ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#b026ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff2bd6"/>
+      <stop offset="0.5" stop-color="#b44bff"/>
+      <stop offset="1" stop-color="#22e4ff"/>
+    </linearGradient>
+    <linearGradient id="grid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff2bd6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#ff2bd6" stop-opacity="0.75"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b1470" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#12042a" stop-opacity="0.85"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="squircle"><rect x="100" y="100" width="824" height="824" rx="186"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)"/>
+    <rect x="100" y="100" width="824" height="824" fill="url(#haze)"/>
+    <!-- synthwave floor -->
+    <g stroke="url(#grid)" stroke-width="4" fill="none">
+      <path d="M100 760 H924 M100 800 H924 M100 852 H924 M100 916 H924"/>
+      <path d="M512 720 L512 924 M512 720 L380 924 M512 720 L644 924 M512 720 L250 924 M512 720 L774 924 M512 720 L120 924 M512 720 L904 924"/>
+    </g>
+    <rect x="100" y="700" width="824" height="60" fill="#14052b" opacity="0.9"/>
+  </g>
+
+  <!-- tiled windows with neon borders (glow on the borders only) -->
+  <g fill="url(#glass)">
+    <rect x="218" y="236" width="300" height="440" rx="34"/>
+    <rect x="552" y="236" width="254" height="203" rx="34"/>
+    <rect x="552" y="473" width="254" height="203" rx="34"/>
+  </g>
+  <g filter="url(#glow)" stroke="url(#neon)" stroke-width="18" fill="none" stroke-linejoin="round">
+    <rect x="218" y="236" width="300" height="440" rx="34"/>
+    <rect x="552" y="236" width="254" height="203" rx="34"/>
+    <rect x="552" y="473" width="254" height="203" rx="34"/>
+  </g>
+  <!-- focus dot -->
+  <circle cx="270" cy="288" r="24" fill="#22e4ff" opacity="0.35"/>
+  <circle cx="270" cy="288" r="13" fill="#22e4ff"/>
+
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="none" stroke="#ff2bd6" stroke-opacity="0.35" stroke-width="4"/>
+</svg>

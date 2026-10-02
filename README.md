@@ -1,234 +1,242 @@
-# HyprDarwin
+<p align="center">
+  <img src="resources/Assets.xcassets/AppIcon.appiconset/icon.png" width="160" alt="HyprDarwin icon">
+</p>
 
-Hyprland-like window manager for macOS: tiling, status bar, borders and plugins in one app.
-Fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) (MIT, © Nikita Bobko, see `LICENSE.txt`).
-Design: [`docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md`](docs/superpowers/specs/2026-10-01-hyprland-darwin-design.md)
+<h1 align="center">HyprDarwin</h1>
 
-## Getting started
+<p align="center">
+  <b>Hyprland for macOS</b>: tiling, a status bar, window borders and plugins in one app.<br>
+  <a href="https://github.com/juniorsaldanha/hyprland-darwin/actions/workflows/ci.yml"><img src="https://github.com/juniorsaldanha/hyprland-darwin/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/juniorsaldanha/hyprland-darwin/releases/latest"><img src="https://img.shields.io/github/v/release/juniorsaldanha/hyprland-darwin?color=b44bff" alt="Release"></a>
+  <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-ff2bd6" alt="MIT"></a>
+  <br>
+  <a href="https://juniorsaldanha.github.io/hyprland-darwin/">Website</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#configuration">Configuration</a> ·
+  <a href="#plugins">Plugins</a>
+</p>
+
+HyprDarwin is a fork of [AeroSpace](https://github.com/nikitabobko/AeroSpace) that replaces a whole stack of
+separate tools with one app. You no longer need AeroSpace or Hyprspace plus SketchyBar, JankyBorders and a folder of
+scripts.
+
+| | |
+|---|---|
+| **Tiling** | AeroSpace's tree tiling, workspaces and multi-monitor support. Hyprland-style keybinds on `alt`. No SIP changes. |
+| **Status bar** | One bar per screen: workspaces, the front app, and widgets for CPU, RAM, GPU, disk, network, volume, battery and clock. Auto-hide, and a notch panel. |
+| **Borders** | A gradient ring around the focused window and a dim ring around the others. |
+| **Plugins** | Any executable that speaks JSON lines over stdin/stdout can be a bar widget, react to events, or run commands. |
+| **Mouse** | Focus follows the mouse, and `alt` + drag moves a window. |
+| **Setup** | `hypr init` applies the macOS settings it needs (with a backup and undo) and writes a starter config. A Permissions window walks you through Accessibility. |
+
+## Install
+
+### Homebrew
 
 ```sh
-make app-install            # HyprDarwin.app → /Applications, CLI → ~/.local/bin/hypr
-hypr init                   # macOS settings (backed up), starter config at ~/.config/hyprland-darwin/config.toml
-open /Applications/HyprDarwin.app
+brew tap juniorsaldanha/hyprland-darwin https://github.com/juniorsaldanha/hyprland-darwin
+brew install --cask hyprdarwin
 ```
 
-- `hypr init --undo` restores the macOS settings from before the first `hypr init`.
-- `hypr init --wallpaper ~/Pictures/wall.jpg` also sets the wallpaper.
-- `hypr list-plugins` shows the bar's plugins; logs are in `~/Library/Logs/hyprland-darwin/`.
-- Your own plugins go in `~/.config/hyprland-darwin/plugins/<name>/`. Copy a bundled one, such as `bundled-plugins/example`, to start.
+This installs `HyprDarwin.app` and the `hypr` CLI. Upgrade with `brew upgrade --cask hyprdarwin`.
 
-What's built in:
-- **Tiling, workspaces and keybinds:** AeroSpace.
-- **Borders:** gradient on the focused window.
-- **Status bar:** one per screen, with auto-hide and a notch panel. `bar.workspaces = 'visible'` shows only the workspace on each monitor.
-- **Plugin host:** JSON over stdin/stdout.
-- **Alt+drag** to move windows.
-- **Permissions window.**
-- **`hypr init`** for setup.
+> [!NOTE]
+> Releases are signed ad hoc, not with an Apple Developer ID. The cask removes the quarantine flag so macOS will open
+> the app. Because of the ad-hoc signature, macOS asks for Accessibility permission again after every upgrade.
+
+### From source
+
+Requires Xcode and Swift 6.4.
+
+```sh
+git clone https://github.com/juniorsaldanha/hyprland-darwin && cd hyprland-darwin
+make app-install   # HyprDarwin.app → /Applications, CLI → ~/.local/bin/hypr
+```
+
+`make app-install` signs with a self-signed certificate called `hyprdarwin-codesign-certificate`, so the Accessibility
+permission survives rebuilds. Create it once in Keychain Access → Certificate Assistant → Create a Certificate…
+(Self Signed Root, Code Signing). Or build ad hoc with `HYPRDARWIN_CODESIGN_IDENTITY=- make app-install`.
+
+## First run
+
+```sh
+hypr init                    # macOS settings (backed up) + starter config
+open -a HyprDarwin           # grant Accessibility when the Permissions window asks
+```
+
+- `hypr init` makes displays share one Space (after you log out), groups windows by app in Mission Control, turns off
+  the window-open animation, and hides the macOS menu bar so the HyprDarwin bar replaces it. It saves the previous
+  values first.
+- `hypr init --undo` restores the settings from before your first `hypr init`.
+- `hypr init --wallpaper ~/Pictures/wall.jpg` also sets the wallpaper on every screen.
+- The starter config goes to `~/.config/hyprland-darwin/config.toml`. An existing config is never overwritten.
+
+## Configuration
+
+The config is `~/.config/hyprland-darwin/config.toml` (or `$XDG_CONFIG_HOME/hyprland-darwin/config.toml`). It uses
+AeroSpace's TOML format plus the sections below, and reloads automatically when you save it.
+
+### Default keybinds
+
+The mod key is `alt`, standing in for Hyprland's `SUPER`.
+
+| Keys | Action |
+|---|---|
+| `alt` + `h` `j` `k` `l` | Focus left / down / up / right |
+| `alt` + `shift` + `h` `j` `k` `l` | Move the window |
+| `alt` + `1`…`0` | Go to workspace 1…10 |
+| `alt` + `shift` + `1`…`0` | Move the window to workspace 1…10 |
+| `alt` + `s` / `alt` + `shift` + `s` | Scratchpad workspace (Hyprland's special workspace) |
+| `alt` + `enter` / `b` / `e` | Open or focus Terminal / Safari / Finder |
+| `alt` + `f` / `alt` + `v` | Fullscreen / toggle floating |
+| `alt` + `/` / `alt` + `,` | Tiles / accordion layout |
+| `alt` + `-` / `alt` + `=` | Resize |
+| `alt` + `r` | Resize mode (`h` `j` `k` `l`, `esc` to leave) |
+| `alt` + `tab` | Previous workspace |
+| `alt` + drag | Move a window with the mouse |
+
+Every AeroSpace command works in bindings and through the CLI (`hypr <command>`). See the
+[AeroSpace command reference](https://nikitabobko.github.io/AeroSpace/commands).
+
+### Bar
+
+```toml
+[bar]
+    enabled = true
+    left = ['workspaces', 'chevron', 'front-app']
+    center = []
+    right = ['disk', 'ram', 'gpu', 'cpu', 'network', 'volume', 'battery', 'clock']
+    workspaces = 'all'      # 'visible': only the workspace on each monitor, e.g. 1 │ 2
+    height = 40             # 16–100
+    color = '0x40000000'    # tint over the blur, 0xAARRGGBB
+    blur = true
+    font = 'Hack Nerd Font' # bundled with the app
+    icon-size = 17
+    label-size = 14
+    foreground = '0xe1e1e1e1'
+    auto-hide = true        # hides while the mouse is at the top edge, for apps' own menus
+
+[notch]
+    items = ['clock']       # widgets in a panel under the notch (MacBooks with a notch)
+```
+
+`workspaces`, `chevron` and `front-app` are built in. Every other name is a [plugin](#plugins). Click a workspace to
+go to it. Click a widget to send it a `click` event, or to open its popup menu.
+
+### Borders
+
+```toml
+[borders]
+    enabled = true
+    width = 5
+    radius = 10
+    active = 'gradient(0xff7aa2f7,0xffbb9af7)'
+    inactive = '0x80414868'
+```
+
+### Mouse
+
+```toml
+[focus-follows-mouse]
+    enabled = true
+
+[mouse-drag]
+    enabled = true
+    modifier = 'alt'
+```
+
+## Plugins
+
+A plugin is a folder holding a `plugin.toml` and an executable. HyprDarwin looks in
+`~/.config/hyprland-darwin/plugins/<name>/`, then in the plugins bundled with the app. Put the name in a `[bar]` or
+`[notch]` list to place it.
+
+```toml
+# plugin.toml
+api = 1
+exec = "./run.sh"
+mode = "interval"           # or "stream"
+interval = 5                # seconds, interval mode only
+events = ["workspace"]      # workspace, focus, monitor, wake, click, power, volume
+```
+
+- **`interval` mode:** the executable runs every `interval` seconds and on each subscribed event, and prints one
+  update. The event comes in `HYPR_EVENT`, `HYPR_EVENT_JSON` and, for clicks, `HYPR_BUTTON`.
+- **`stream` mode:** the executable stays running, reads one JSON event per line on stdin, and prints updates whenever
+  it likes. It must exit when stdin closes.
+
+Each line it prints is JSON:
+
+```json
+{"icon": "", "label": "12%", "color": "0xffe1e1e1", "icon_color": "0xffbb9af7", "background": "0x40000000"}
+{"hidden": true}
+{"popup": [{"label": "Open Activity Monitor", "run": "exec-and-forget open -a 'Activity Monitor'"}]}
+{"run": "workspace 2"}
+```
+
+- A line is a partial update and is merged into the widget's current state.
+- `run` executes any HyprDarwin command.
+- Plugins get `HYPR_PLUGIN_NAME` and `HYPR_PLUGIN_DIR` in their environment.
+- A stream plugin that crashes is restarted with backoff. After 5 crashes within 60 s it stops until the next reload.
+
+`hypr list-plugins` shows each plugin's status. Logs are in `~/Library/Logs/hyprland-darwin/<plugin>.log`. To start
+your own plugin, copy [`bundled-plugins/example`](bundled-plugins/example).
+
+## CLI
+
+`hypr` is AeroSpace's CLI plus a few HyprDarwin commands:
+
+| Command | What it does |
+|---|---|
+| `hypr init [--undo] [--wallpaper <path>]` | Set up macOS and write a starter config |
+| `hypr list-plugins [--json]` | Plugin status and the latest widget state |
+| `hypr workspace 3`, `hypr list-windows --all`, … | [Every AeroSpace command](https://nikitabobko.github.io/AeroSpace/commands) |
+
+## Troubleshooting
+
+- **Nothing tiles:** check System Settings → Privacy & Security → Accessibility. After an upgrade, remove HyprDarwin
+  from the list and add it again.
+- **A widget shows ⚠:** click it to see why, and check `hypr list-plugins` and `~/Library/Logs/hyprland-darwin/`.
+- **The app log** is `~/Library/Logs/hyprland-darwin/hyprdarwin.log`.
 
 ## Development
-
-Requires Xcode and Swift 6.4 (`.swift-version`). Run `make help` for every target.
 
 | Command | What it does |
 |---|---|
 | `make build` | Debug build, warnings as errors |
-| `make test-unit` | Unit tests (XCTest, all classes except `*IntegrationTest`) |
+| `make test-unit` | Unit tests (every XCTest class except `*IntegrationTest`) |
 | `make test-integration` | `*IntegrationTest` classes plus checks on the real CLI binary |
 | `make lint` | swiftformat, swiftlint, periphery |
-| `make app` | Release `HyprDarwin.app` + `hypr` CLI in `.release/` |
-| `make app-install` | Same, then installs to `/Applications` and `~/.local/bin/hypr` |
+| `make app` / `make app-install` | Release build in `.release/` / and install it |
 | `make ci` | Everything the CI `test` and `lint` jobs run |
 
-Tests:
-- **Unit tests** live in `Sources/AppBundleTests/` (upstream layout).
-- **Integration tests** cross a real boundary: a file on disk, a process, the CLI binary or the app bundle. Name their XCTest classes `*IntegrationTest`. Bundle checks run with `script/test-integration.sh --app <path>`.
+- **Unit tests** live in `Sources/AppBundleTests/`.
+- **Integration tests** cross a real boundary: a file, a process, the CLI binary or the app bundle. Name their
+  classes `*IntegrationTest`.
+- **Design docs** are in [`docs/superpowers/specs/`](docs/superpowers/specs/).
 
-Signing: `make app-install` signs with `$HYPRDARWIN_CODESIGN_IDENTITY` (default `hyprdarwin-codesign-certificate`, a self-signed code-signing certificate made in Keychain Access). A stable identity keeps the Accessibility permission across rebuilds.
+### CI and releases
 
-CI (`.github/workflows/ci.yml`): `test` (macOS 15 and 27), `lint`, and `build-app`, which uploads the ad-hoc-signed app as an artifact.
+| Workflow | When it runs | What it does |
+|---|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Push to `main`, pull requests | Tests on macOS 15 and 27, lint, and an app build uploaded as an artifact |
+| [`release.yml`](.github/workflows/release.yml) | Tag `v*` | Tests, builds the app with that version, publishes the GitHub release and updates [`Casks/hyprdarwin.rb`](Casks) |
+| [`pages.yml`](.github/workflows/pages.yml) | Changes to `site/` | Deploys the website to GitHub Pages |
 
----
+To release:
 
-*Original AeroSpace README follows.*
-
-# AeroSpace Beta [![Build](https://github.com/nikitabobko/AeroSpace/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/nikitabobko/AeroSpace/actions/workflows/build.yml)
-
-<img src="./resources/Assets.xcassets/AppIcon.appiconset/icon.png" width="40%" align="right">
-
-AeroSpace is an i3-like tiling window manager for macOS
-
-Videos:
-- [YouTube 91 sec Demo](https://www.youtube.com/watch?v=UOl7ErqWbrk)
-- [YouTube Guide by Josean Martinez](https://www.youtube.com/watch?v=-FoWClVHG5g)
-
-Docs:
-- [AeroSpace Guide](https://nikitabobko.github.io/AeroSpace/guide)
-- [AeroSpace Commands](https://nikitabobko.github.io/AeroSpace/commands)
-- [AeroSpace Goodies](https://nikitabobko.github.io/AeroSpace/goodies)
-
-## Key features
-
-- Tiling window manager based on a [tree paradigm](https://nikitabobko.github.io/AeroSpace/guide#tree)
-- [i3](https://i3wm.org/) inspired
-- Fast workspaces switching without animations and without the necessity to disable SIP
-- AeroSpace employs its [own emulation of virtual workspaces](https://nikitabobko.github.io/AeroSpace/guide#emulation-of-virtual-workspaces) instead of relying on native macOS Spaces due to [their considerable limitations](https://nikitabobko.github.io/AeroSpace/guide#emulation-of-virtual-workspaces)
-- Plain text configuration (dotfiles friendly). See: [default-config.toml](https://nikitabobko.github.io/AeroSpace/guide#default-config)
-- CLI first (manpages and shell completion included)
-- Doesn't require disabling SIP (System Integrity Protection)
-- [Proper multi-monitor support](https://nikitabobko.github.io/AeroSpace/guide#multiple-monitors) (i3-like paradigm)
-
-## Installation
-
-Install via [Homebrew](https://brew.sh/) to get autoupdates (Preferred)
-
-```
-brew install --cask nikitabobko/tap/aerospace
+```sh
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
-In multi-monitor setup please make sure that monitors [are properly arranged](https://nikitabobko.github.io/AeroSpace/guide#proper-monitor-arrangement).
+The website is the static page in [`site/`](site). To use a custom domain, add a `site/CNAME` file containing the
+domain and point its DNS at GitHub Pages.
 
-Other installation options: https://nikitabobko.github.io/AeroSpace/guide#installation
+## Credits
 
-> [!NOTE]
-> By using AeroSpace, you acknowledge that it's not [notarized](https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution).
->
-> Notarization is a "security" feature by Apple.
-> You send binaries to Apple, and they either approve them or not.
-> In reality, notarization is about building binaries the way Apple likes it.
->
-> I don't have anything against notarization as a concept.
-> I specifically don't like the way Apple does notarization.
-> I don't have time to deal with Apple.
->
-> [Homebrew installation script](https://github.com/nikitabobko/homebrew-tap/blob/main/Casks/aerospace.rb) is configured to
-> automatically delete `com.apple.quarantine` attribute, that's why the app should work out of the box, without any warnings that
-> "Apple cannot check AeroSpace for malicious software"
-
-## Community, discussions, issues
-
-AeroSpace project doesn't accept Issues directly - we ask you to create a [Discussion](https://github.com/nikitabobko/AeroSpace/discussions) first.
-Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
-
-Community discussions happen at GitHub Discussions.
-There you can discuss bugs, propose new features, ask your questions, show off your setup, or just chat.
-
-There are 7 channels:
--   [#all](https://github.com/nikitabobko/AeroSpace/discussions).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions.atom?discussions_q=sort%3Adate_created).
-    Feed with all discussions.
--   [#announcements](https://github.com/nikitabobko/AeroSpace/discussions/categories/announcements).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/announcements.atom?discussions_q=category%3Aannouncements+sort%3Adate_created).
-    Only maintainers can post here.
-    Highly moderated traffic.
--   [#announcements-releases](https://github.com/nikitabobko/AeroSpace/discussions/categories/announcements-releases).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/announcements-releases.atom?discussions_q=category%3Aannouncements-releases+sort%3Adate_created).
-    Announcements about non-patch releases.
-    Only maintainers can post here.
--   [#feature-ideas](https://github.com/nikitabobko/AeroSpace/discussions/categories/feature-ideas).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/feature-ideas.atom?discussions_q=category%3Afeature-ideas+sort%3Adate_created).
--   [#general](https://github.com/nikitabobko/AeroSpace/discussions/categories/general).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/general.atom?discussions_q=sort%3Adate_created+category%3Ageneral).
--   [#potential-bugs](https://github.com/nikitabobko/AeroSpace/discussions/categories/potential-bugs).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/potential-bugs.atom?discussions_q=category%3Apotential-bugs+sort%3Adate_created).
-    If you think that you have encountered a bug, you can discuss your bugs here.
--   [#questions-and-answers](https://github.com/nikitabobko/AeroSpace/discussions/categories/questions-and-answers).
-    [RSS](https://github.com/nikitabobko/AeroSpace/discussions/categories/questions-and-answers.atom?discussions_q=category%3Aquestions-and-answers+sort%3Adate_created).
-    Everyone is welcome to ask questions.
-    Everyone is encouraged to answer other people's questions.
-
-## Project status
-
-Public Beta. AeroSpace can be used as a daily driver, but expect breaking changes until 1.0 is reached.
-
-What stops us from 1.0 release:
-- [x] https://github.com/nikitabobko/AeroSpace/issues/131 Performance. Implement thread-per-application to circumvent macOS blocking AX API.
-- [ ] https://github.com/nikitabobko/AeroSpace/issues/1215 _Big refactoring_. Rewrite mutable double-linked core tree data structure to immutable single-linked persistent tree.
-  Important for: stability and potential performance
-  - [ ] https://github.com/nikitabobko/AeroSpace/issues/1216 The big refactoring will help us to fix stability issue that windows may randomly jump to the focused workspace
-  - [ ] https://github.com/nikitabobko/AeroSpace/issues/68 The big refactoring will help us to support macOS native tabs
-- [x] https://github.com/nikitabobko/AeroSpace/issues/278 Implement shell-like combinators.
-  Ignore a lot of crazy fuss in the issue,
-  We are most probably going with the minimal approach to only introduce common shell-combinators: `||`, `&&`, `;` and `eval` command to send multiple commands in one go.
-- [ ] https://github.com/nikitabobko/AeroSpace/issues/1012 Investigate a possibility to use `CGEvent.tapCreate` API for global hotkeys
-  - [ ] https://github.com/nikitabobko/AeroSpace/issues/28 Maybe it will allow to distinguish left and right modifiers. Maybe not
-
-Big and important issues which will go after 1.0 release:
-- [ ] https://github.com/nikitabobko/AeroSpace/issues/2 sticky windows
-- [ ] https://github.com/nikitabobko/AeroSpace/issues/260 Dynamic TWM
-
-## Development
-
-A notes on how to setup the project, build it, how to run the tests, etc. can be found here: [dev-docs/development.md](./dev-docs/development.md)
-
-## Project values
-
-**Values**
-- AeroSpace is targeted at advanced users and developers
-- Keyboard centric
-- Breaking changes (configuration files, CLI, behavior) are avoided as much as possible, but it must not let the software stagnate.
-  Thus breaking changes can happen, but with careful considerations and helpful message.
-  [Semver](https://semver.org/) major version is bumped in case of a breaking change (It's all guaranteed once AeroSpace reaches 1.0 version, until then breaking changes just happen)
-- AeroSpace doesn't use GUI, unless necessarily
-  - AeroSpace will never provide a GUI for configuration.
-    For advanced users, it's easier to edit a configuration file in text editor rather than navigating through checkboxes in GUI.
-  - Status menu icon is ok, because visual feedback is needed
-- Provide _practical_ features. Fancy appearance features are not _practical_ (e.g. window borders, transparency, animations, etc.)
-- "dark magic" (aka "private APIs", "code injections", etc.) must be avoided as much as possible
-  - Right now, AeroSpace uses only a single private API to get window ID of accessibility object `_AXUIElementGetWindow`.
-    Everything else is [macOS public accessibility API](https://developer.apple.com/documentation/applicationservices/axuielement_h).
-  - AeroSpace will never require you to disable SIP (System Integrity Protection).
-  - The goal is to make AeroSpace easily maintainable, and resistant to macOS updates.
-
-**Non Values**
-- Play nicely with existing macOS features.
-  If limitations are imposed then AeroSpace won't play nicely with existing macOS features
-  (For example, AeroSpace doesn't acknowledge the existence of macOS Spaces, and it uses [emulation of its own workspaces](https://nikitabobko.github.io/AeroSpace/guide#emulation-of-virtual-workspaces))
-- Ricing.
-  AeroSpace provides only a very minimal support for ricing - gaps and a few callbacks for integrations with bars.
-  The current maintainer doesn't care about ricing.
-  Ricing issues are not a priority, and they are mostly ignored.
-  The ricing stance can change only with the appearance of more maintainers.
-
-## macOS compatibility
-
-* AeroSpace binary runs on: macOS 13+
-* AeroSpace debug build from sources is supported on: macOS 14+
-* AeroSpace release build from sources is supported on: macOS 15+ (Requires: Swift 6.4, Xcode 26.6+)
-
-## Sponsorship
-
-AeroSpace is developed and maintained in my free time.
-If you find it useful, [consider sponsoring](https://github.com/sponsors/nikitabobko#sponsors).
-
-## People who have write access
-
-In alphabetical order:
-
-- [@mobile-ar](https://github.com/mobile-ar)
-- [@nikitabobko](https://github.com/nikitabobko)
-- [@rickyz](https://github.com/rickyz)
-
-## Tip of the day
-
-```bash
-defaults write -g NSWindowShouldDragOnGesture -bool true
-```
-
-Now, you can move windows by holding `ctrl`+`cmd` and dragging any part of the window (not necessarily the window title)
-
-Source: [reddit](https://www.reddit.com/r/MacOS/comments/k6hiwk/keyboard_modifier_to_simplify_click_drag_of/)
-
-## Related projects
-
-In alphabetical order:
-
-- [Amethyst](https://github.com/ianyh/Amethyst) -
-  Beginners friendly GUI-configurable tiling window manager with automatic layouts à la xmonad.
-- [InstantSpaceSwitcher](https://github.com/jurplel/InstantSpaceSwitcher) -
-  Instant space switching by synthesizing trackpad gesture with an artificially high velocity.
-- [rift](https://github.com/acsandmann/rift) -
-  Virtual workspaces + private APIs.
-- [yabai](https://github.com/koekeishiya/yabai) -
-  A window manager that provides tight integration with native macOS Spaces and goes all the way to private APIs and code injection.
-  yabai is a source of inspiration for a lot of other OSS projects.
+- **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** by Nikita Bobko: the tiling core. MIT, see
+  [`LICENSE.txt`](LICENSE.txt).
+- **Ideas** from [Hyprland](https://hypr.land), [Hyprspace](https://hyprspace.net),
+  [SketchyBar](https://github.com/FelixKratz/SketchyBar) and [JankyBorders](https://github.com/FelixKratz/JankyBorders).
+- **[Hack Nerd Font](https://www.nerdfonts.com)** is bundled for the bar's icons. Its licence is in
+  [`bundled-fonts/LICENSE.md`](bundled-fonts/LICENSE.md).
