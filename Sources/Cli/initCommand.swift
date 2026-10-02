@@ -32,7 +32,17 @@ func runInit(_ args: [String]) -> Int32 {
     let tool = DefaultsTool(domainOverride: testDomain)
     let dir = hyprDarwinConfigDir()
     let backupUrl = dir.appending(path: "setup-backup.json")
-    let existingBackup = (try? Data(contentsOf: backupUrl)).flatMap { try? JSONDecoder().decode(SetupBackup.self, from: $0) }
+    // Missing is fine; present but unreadable is not: it holds the only copy of the original settings
+    let existingBackup: SetupBackup?
+    if FileManager.default.fileExists(atPath: backupUrl.path) {
+        guard let data = try? Data(contentsOf: backupUrl), let backup = try? JSONDecoder().decode(SetupBackup.self, from: data) else {
+            eprint("Can't read the backup \(backupUrl.path). It holds your original settings: fix or move it away first. Nothing was changed.")
+            return 1
+        }
+        existingBackup = backup
+    } else {
+        existingBackup = nil
+    }
 
     if undo {
         guard let backup = existingBackup else { print("Nothing to undo: no \(backupUrl.path)"); return EXIT_CODE_ZERO }
@@ -49,7 +59,7 @@ func runInit(_ args: [String]) -> Int32 {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(plan.backup).write(to: backupUrl)
+        try encoder.encode(plan.backup).write(to: backupUrl, options: .atomic)
     } catch {
         eprint("Can't write the backup \(backupUrl.path): \(error.localizedDescription). Nothing was changed.")
         return 1
@@ -89,7 +99,7 @@ func runInit(_ args: [String]) -> Int32 {
         }
     }
 
-    if testDomain == nil { refreshSystem() }
+    if testDomain == nil && !plan.actions.isEmpty { refreshSystem() } // no Dock restart when nothing changed
     print("Backup of the previous settings: \(backupUrl.path) (undo: hypr init --undo)")
     return exitCode
 }

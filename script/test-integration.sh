@@ -30,7 +30,7 @@ test -x "$cli" || fail "$cli missing, run ./build-debug.sh first"
 # hypr init / --undo: throwaway defaults domain + temp config dir (never the real settings)
 init_domain="dev.hyprdarwin.test-init-$$"
 init_home="$(mktemp -d)"
-cleanup_init() { /usr/bin/defaults delete "$init_domain" > /dev/null 2>&1 || true; rm -rf "$init_home"; }
+cleanup_init() { /usr/bin/defaults delete "$init_domain" > /dev/null 2>&1 || true; rm -f "$HOME/Library/Preferences/$init_domain.plist"; rm -rf "$init_home"; }
 trap cleanup_init EXIT
 run_init() { HYPR_INIT_TEST_DOMAIN="$init_domain" XDG_CONFIG_HOME="$init_home" "$cli" init "$@" > /dev/null; }
 
@@ -47,6 +47,11 @@ run_init --undo || fail "'init --undo' failed"
 test "$(/usr/bin/defaults read "$init_domain" expose-group-apps)" = 0 || fail "undo didn't restore expose-group-apps"
 /usr/bin/defaults read "$init_domain" _HIHideMenuBar > /dev/null 2>&1 && fail "undo didn't delete a key that was unset"
 test ! -f "$init_home/hyprland-darwin/setup-backup.json" || fail "undo didn't remove the backup"
+# An unreadable backup must never be replaced: it holds the only copy of the original settings
+echo '{"entries": [' > "$init_home/hyprland-darwin/setup-backup.json"
+run_init 2> /dev/null && fail "init must refuse an unreadable backup"
+run_init --undo 2> /dev/null && fail "init --undo must refuse an unreadable backup"
+test "$(cat "$init_home/hyprland-darwin/setup-backup.json")" = '{"entries": [' || fail "init replaced an unreadable backup"
 
 # App bundle
 if test -n "$app"; then
@@ -58,6 +63,7 @@ if test -n "$app"; then
     test -f "$app/Contents/Resources/default-config.toml" || fail "missing Contents/Resources/default-config.toml"
     test -x "$app/Contents/Resources/bundled-plugins/example/example.sh" || fail "missing bundled-plugins/example in the app bundle"
     test -f "$app/Contents/Resources/bundled-fonts/HackNerdFont-Bold.ttf" || fail "missing bundled-fonts in the app bundle"
+    test -f "$app/Contents/Resources/bundled-fonts/LICENSE.md" || fail "the font license must ship with the font (Bitstream Vera / MIT)"
     codesign -v "$app" || fail "codesign verification failed for $app"
 fi
 

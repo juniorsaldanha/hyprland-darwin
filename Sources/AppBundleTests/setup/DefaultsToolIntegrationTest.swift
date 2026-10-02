@@ -12,6 +12,8 @@ final class DefaultsToolIntegrationTest: XCTestCase {
         p.standardError = FileHandle.nullDevice
         try? p.run()
         p.waitUntilExit()
+        // `defaults delete` leaves an empty plist behind
+        try? FileManager.default.removeItem(at: FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Preferences/\(domain).plist"))
     }
 
     func testWriteReadDeleteRoundTrip() {
