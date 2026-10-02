@@ -34,6 +34,8 @@ private final class RunState: @unchecked Sendable { // touched only on the proce
     var gotLine = false
     var exited = false
     var eof = false
+    var finished = false
+    var stdout: FileHandle? = nil
 }
 
 /// Runs one plugin. Every mutable field is touched only on `queue`; results hop to the main actor.
@@ -49,6 +51,8 @@ final class PluginProcess: @unchecked Sendable {
 
     private var isStopped = false
     private var currentPid: pid_t? = nil
+    /// Process group of the latest spawn. Outlives the leader: background children keep it alive.
+    private var lastPgid: pid_t? = nil
     private var startedAt = Date()
     private var supervisor: StreamSupervisor
     private var health = IntervalHealth()
@@ -93,10 +97,8 @@ final class PluginProcess: @unchecked Sendable {
     func stop() {
         queue.async { [self] in
             shutDown(signal: SIGTERM)
-            if let pid = currentPid {
-                queue.asyncAfter(deadline: .now() + 1) { [self] in
-                    if currentPid == pid { kill(-pid, SIGKILL) }
-                }
+            if let pgid = lastPgid {
+                queue.asyncAfter(deadline: .now() + 1) { kill(-pgid, SIGKILL) } // ESRCH if already gone: harmless
             }
         }
     }
@@ -123,7 +125,7 @@ final class PluginProcess: @unchecked Sendable {
         intervalTimer?.cancel()
         intervalTimer = nil
         closeStdin()
-        if let pid = currentPid { kill(-pid, signal) }
+        if let pgid = lastPgid { kill(-pgid, signal) }
     }
 
     private func report(_ status: PluginStatus) {
@@ -155,6 +157,7 @@ final class PluginProcess: @unchecked Sendable {
                 close(out[1])
                 close(err[1])
                 currentPid = pid
+                lastPgid = pid
                 return (pid, out[0], err[0])
             case .failure(let message):
                 [out[0], out[1], err[0], err[1]].forEach { close($0) }
@@ -165,6 +168,7 @@ final class PluginProcess: @unchecked Sendable {
 
     private func readLines(_ fd: Int32, _ state: RunState, onPiece: @escaping @Sendable (LineSplitter.Piece) -> Void, onEOF: @escaping @Sendable () -> Void) {
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        state.stdout = handle
         // The handler captures its own handle: nothing else retains it, and deallocating it would close the fd
         // (the plugin then dies of SIGPIPE). Clearing the handler at EOF breaks the cycle.
         handle.readabilityHandler = { [self, handle] _ in
@@ -224,6 +228,7 @@ final class PluginProcess: @unchecked Sendable {
         readLines(child.stdout, state, onPiece: { [self] in deliver($0) }, onEOF: {})
         readStderr(child.stderr)
         watchExit(child.pid) { [self] status in
+            kill(-child.pid, SIGKILL) // background children die with their plugin; no orphans across restarts
             closeStdin()
             log.write("exited with status \(status)")
             handleStreamExit()
@@ -294,7 +299,10 @@ final class PluginProcess: @unchecked Sendable {
         intervalRunning = true
         let state = RunState()
         let finishIfDone: @Sendable () -> Void = { [self] in
-            if state.exited && state.eof { finishInterval(success: state.gotLine) }
+            if state.exited && state.eof && !state.finished {
+                state.finished = true
+                finishInterval(success: state.gotLine)
+            }
         }
         readLines(child.stdout, state, onPiece: { [self] piece in
             guard !state.gotLine else { return }
@@ -310,9 +318,14 @@ final class PluginProcess: @unchecked Sendable {
         readStderr(child.stderr)
         let timeout = min(timing.interval(seconds), timing.timeoutCap)
         queue.asyncAfter(deadline: .now() + timeout) { [self] in
-            guard !state.exited, !state.gotLine else { return }
-            log.write("timed out after \(timeout) s")
+            guard !state.finished else { return }
+            if !state.gotLine { log.write("timed out after \(timeout) s") }
             kill(-child.pid, SIGKILL)
+            // A background or escaped child may still hold stdout open: stop reading and end the run anyway
+            state.stdout?.readabilityHandler = nil
+            try? state.stdout?.close()
+            state.finished = true
+            finishInterval(success: state.gotLine)
         }
         watchExit(child.pid) { _ in
             state.exited = true

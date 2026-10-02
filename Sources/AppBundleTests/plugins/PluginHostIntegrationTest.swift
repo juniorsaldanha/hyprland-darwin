@@ -148,6 +148,31 @@ final class PluginHostIntegrationTest: XCTestCase {
         assertEquals(host.snapshot().map(\.name), ["keep", "change"])
     }
 
+    func testIntervalRunWithBackgroundChildDoesNotFreeze() throws {
+        // The background `sleep` keeps stdout open after the script exits: the run must still end at the timeout
+        try plugin("bg", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 1", script: "sleep 3 &\nexit 1\n")
+        sync(["bg"])
+        assertTrue(waitUntil(2) { status("bg") == "failing (3)" })
+    }
+
+    func testStreamExitKillsLeftoverChildren() throws {
+        try plugin("orphans", manifest: stream, script: "sleep 30 &\necho $! >> children\nexit 1\n")
+        sync(["orphans"])
+        assertTrue(waitUntil { status("orphans")?.hasPrefix("stopped") == true })
+        let children = ((try? String(contentsOf: root.appending(path: "orphans/children"), encoding: .utf8)) ?? "")
+            .split(separator: "\n").compactMap { pid_t($0) }
+        assertEquals(children.count, 5)
+        assertTrue(waitUntil(2) { children.allSatisfy { !isAlive($0) } })
+    }
+
+    func testReloadRevivesStoppedPlugin() throws {
+        try plugin("crash", manifest: stream, script: "exit 1\n")
+        sync(["crash"])
+        assertTrue(waitUntil { status("crash")?.hasPrefix("stopped") == true })
+        sync(["crash"]) // "stopped until reload"
+        assertEquals(status("crash"), "starting")
+    }
+
     func testMissingAndInvalidStatuses() throws {
         try plugin("bad", manifest: "api = 7", script: "")
         sync(["bad", "ghost"])

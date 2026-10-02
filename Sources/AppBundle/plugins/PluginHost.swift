@@ -42,6 +42,11 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
             self.status = status
         }
 
+        var isStopped: Bool {
+            if case .stopped = status { return true }
+            return false
+        }
+
         var modeName: String {
             if case .ok(_, let manifest) = resolution { return manifest.mode.name }
             return "-"
@@ -76,7 +81,8 @@ func formatPluginLine(_ s: PluginSnapshot) -> String {
             store.remove(name)
         }
         for plugin in resolved {
-            if let existing = plugins[plugin.name], existing.resolution == plugin.resolution { continue }
+            // Unchanged and alive: leave it running. A crash-looped (stopped) plugin is retried on reload.
+            if let existing = plugins[plugin.name], existing.resolution == plugin.resolution, !existing.isStopped { continue }
             plugins[plugin.name]?.process?.stop()
             plugins[plugin.name] = makeHosted(plugin, environment)
         }
