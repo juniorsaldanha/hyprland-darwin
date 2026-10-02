@@ -569,8 +569,11 @@ import Foundation
 struct WidgetState: Equatable, Sendable, Encodable {
     var icon: String? = nil
     var label: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var color: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var iconColor: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var background: String? = nil
     var hidden: Bool = false
 
@@ -1166,7 +1169,7 @@ final class PluginHostIntegrationTest: XCTestCase {
         try plugin("ok", manifest: "api = 1\nexec = 'run.sh'\nmode = 'interval'\ninterval = 1", script: "echo \"{\\\"label\\\":\\\"$HYPR_PLUGIN_NAME:$(basename \"$PWD\")\\\"}\"\n")
         sync(["ok"])
         assertTrue(waitUntil { label("ok") == "ok:ok" })
-        assertEquals(status("ok"), "running")
+        assertTrue(waitUntil { status("ok") == "running" }) // status arrives after the line it reports on
     }
 
     func testIntervalTimeoutKillsTreeAndGoesFailing() throws {
@@ -1314,7 +1317,6 @@ private final class RunState: @unchecked Sendable { // touched only on the proce
 
 /// Runs one plugin. Every mutable field is touched only on `queue`; results hop to the main actor.
 final class PluginProcess: @unchecked Sendable {
-    let name: String
     private let dir: String
     private let manifest: PluginManifest
     private let environment: [String: String]
@@ -1346,7 +1348,6 @@ final class PluginProcess: @unchecked Sendable {
         onLine: @escaping @MainActor @Sendable (PluginLine) -> Void,
         onStatus: @escaping @MainActor @Sendable (PluginStatus) -> Void,
     ) {
-        self.name = name
         self.dir = dir
         self.manifest = manifest
         self.environment = environment
@@ -1443,9 +1444,11 @@ final class PluginProcess: @unchecked Sendable {
 
     private func readLines(_ fd: Int32, _ state: RunState, onPiece: @escaping @Sendable (LineSplitter.Piece) -> Void, onEOF: @escaping @Sendable () -> Void) {
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
-        handle.readabilityHandler = { [self] h in
-            let data = h.availableData
-            if data.isEmpty { h.readabilityHandler = nil }
+        // The handler captures its own handle: nothing else retains it, and deallocating it would close the fd
+        // (the plugin then dies of SIGPIPE). Clearing the handler at EOF breaks the cycle.
+        handle.readabilityHandler = { [self, handle] _ in
+            let data = handle.availableData
+            if data.isEmpty { handle.readabilityHandler = nil }
             queue.async {
                 if data.isEmpty {
                     state.splitter.finish().forEach(onPiece)
@@ -1459,9 +1462,9 @@ final class PluginProcess: @unchecked Sendable {
 
     private func readStderr(_ fd: Int32) {
         let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
-        handle.readabilityHandler = { [log] h in
-            let data = h.availableData
-            if data.isEmpty { h.readabilityHandler = nil } else { log.append(raw: data) }
+        handle.readabilityHandler = { [log, handle] _ in // captures its own handle, see readLines
+            let data = handle.availableData
+            if data.isEmpty { handle.readabilityHandler = nil } else { log.append(raw: data) }
         }
     }
 
@@ -1469,9 +1472,10 @@ final class PluginProcess: @unchecked Sendable {
         DispatchQueue.global(qos: .utility).async { [self] in
             var status: Int32 = 0
             while unsafe waitpid(pid, &status, 0) == -1 && errno == EINTR {}
-            queue.async {
+            let exitStatus = status
+            queue.async { [self] in
                 if currentPid == pid { currentPid = nil }
-                then(status)
+                then(exitStatus)
             }
         }
     }

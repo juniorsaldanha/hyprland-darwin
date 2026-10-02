@@ -3,8 +3,11 @@ import Foundation
 struct WidgetState: Equatable, Sendable, Encodable {
     var icon: String? = nil
     var label: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var color: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var iconColor: String? = nil
+    // periphery:ignore - read by the bar (sub-project 4); encoded by `list-plugins --json`
     var background: String? = nil
     var hidden: Bool = false
 
