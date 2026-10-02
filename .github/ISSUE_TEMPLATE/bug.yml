@@ -1,0 +1,39 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Steps to reproduce, what you expected, and what happened instead.
+      value: |
+        Steps to reproduce:
+        1.
+        2.
+
+        Expected:
+        Actual:
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `hypr --version` and your macOS version.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: The relevant part of `~/.config/hyprland-darwin/config.toml`.
+      render: toml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        For window problems, `hypr debug-windows`. For the bar or plugins, `hypr list-plugins` and
+        `~/Library/Logs/hyprland-darwin/`. Screenshots help too.

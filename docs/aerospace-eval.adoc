@@ -2,7 +2,7 @@
 include::util/man-attributes.adoc[]
 :manname: aerospace-eval
 // tag::purpose[]
-:manpurpose: Send multiple commands to AeroSpace at once
+:manpurpose: Send multiple commands to HyprDarwin at once
 // end::purpose[]
 
 // =========================================================== Synopsis

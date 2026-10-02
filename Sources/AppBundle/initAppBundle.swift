@@ -72,11 +72,11 @@ struct ServerArgs: Sendable {
 }
 
 private let serverHelp = """
-    USAGE: \(CommandLine.arguments.first ?? "AeroSpace.app/Contents/MacOS/AeroSpace") [<options>]
+    USAGE: \(CommandLine.arguments.first ?? "HyprDarwin.app/Contents/MacOS/HyprDarwin") [<options>]
 
     OPTIONS:
       -h, --help              Print help
-      -v, --version           Print AeroSpace.app version
+      -v, --version           Print HyprDarwin.app version
       --config-path <path>    Config path. It will take priority over
                               ${XDG_CONFIG_HOME:-~/.config}/hyprland-darwin/config.toml
       --read-only             Disable window management.

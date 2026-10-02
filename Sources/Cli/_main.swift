@@ -5,7 +5,7 @@ import Network
 
 let usage =
     """
-    USAGE: \(CommandLine.arguments.first ?? "aerospace") [-h|--help] [-v|--version] <subcommand> [<args>...]
+    USAGE: \(CommandLine.arguments.first ?? "hypr") [-h|--help] [-v|--version] <subcommand> [<args>...]
 
     SUBCOMMANDS:
     \((subcommandDescriptions + [["  init", "Apply HyprDarwin's macOS settings (backed up first) and write a starter config"]]).sortedBy { $0[0] }.toPaddingTable(columnSeparator: "   ").joined(separator: "\n"))
@@ -38,16 +38,16 @@ struct Main {
             }
             print(
                 """
-                aerospace CLI client version: \(cliClientVersionAndHash)
-                AeroSpace.app server version: \(serverVersionAndHash ?? "Unknown. The server is not responding")
+                hypr CLI version: \(cliClientVersionAndHash)
+                HyprDarwin.app version: \(serverVersionAndHash ?? "Unknown. The server is not responding")
                 """,
             )
             if serverVersionAndHash != nil && cliClientVersionAndHash != serverVersionAndHash {
                 eprint(
                     """
-                    Warning: AeroSpace client/server versions don't match. Possible fixes:
-                      - Restart AeroSpace.app (server restart is required after each update)
-                      - Reinstall and restart AeroSpace (corrupted installation)
+                    Warning: hypr and HyprDarwin.app versions don't match. Possible fixes:
+                      - Restart HyprDarwin.app (required after each update)
+                      - Reinstall and restart HyprDarwin (corrupted installation)
                     """,
                 )
             }
@@ -78,7 +78,7 @@ struct Main {
             case .customError(let msg):
                 exit(failExitCode, err: msg)
             case .nwError(let e):
-                exit(failExitCode, err: "Can't connect to AeroSpace server. Is AeroSpace.app running?\n\(e.localizedDescription)")
+                exit(failExitCode, err: "Can't connect to HyprDarwin. Is HyprDarwin.app running?\n\(e.localizedDescription)")
         }
 
         var stdin = ""
@@ -125,12 +125,12 @@ struct Main {
         if ans.exitCode != EXIT_CODE_ZERO && ans.serverVersionAndHash != cliClientVersionAndHash {
             eprint(
                 """
-                Warning: AeroSpace client/server versions don't match
-                  - aerospace CLI client version: \(cliClientVersionAndHash)
-                  - AeroSpace.app server version: \(ans.serverVersionAndHash)
+                Warning: hypr and HyprDarwin.app versions don't match
+                  - hypr CLI version: \(cliClientVersionAndHash)
+                  - HyprDarwin.app version: \(ans.serverVersionAndHash)
                   Possible fixes:
-                  - Restart AeroSpace.app (server restart is required after each update)
-                  - Reinstall and restart AeroSpace (corrupted installation)
+                  - Restart HyprDarwin.app (required after each update)
+                  - Reinstall and restart HyprDarwin (corrupted installation)
                 """,
             )
         }

@@ -1,0 +1,11 @@
+name: Feature request
+description: An idea for HyprDarwin
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: What problem it solves for you. If Hyprland, SketchyBar or JankyBorders does it, say how.
+    validations:
+      required: true

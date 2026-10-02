@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Tiling behaviour that AeroSpace has too
+    url: https://github.com/nikitabobko/AeroSpace/discussions
+    about: HyprDarwin's tiling core is AeroSpace. Its discussions may already answer your question.
