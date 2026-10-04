@@ -1,7 +1,7 @@
 # hyprland-darwin — Design
 
 Date: 2026-10-01
-Status: Draft, awaiting review
+Status: Implemented (v0.2.2). Where the code differs, the sub-project specs and the README win.
 
 ## Goal
 
@@ -120,7 +120,7 @@ immediately.
 - Hiding the system menu bar is done by Setup, not by the bar.
 - **Native widgets** (they need core state): `workspaces`, `front-app`.
 - **Bundled plugins** (ported from the current shell scripts): `clock`,
-  `battery`, `cpu`, `ram`, `disk`.
+  `battery`, `cpu`, `ram`, `disk`, `gpu`, `network`, `volume`.
 
 ### Notch panel
 
@@ -167,7 +167,7 @@ It applies what `hyprspace init` does today, minus installing other tools:
   config.
 
 Before each change, the previous value is saved to
-`~/.config/hyprland-darwin/setup-backup.toml`. `hypr init --undo`
+`~/.config/hyprland-darwin/setup-backup.json`. `hypr init --undo`
 restores those values.
 
 The Hack Nerd Font is bundled inside the app and registered for the
@@ -191,7 +191,7 @@ inactive = '0x80414868'
 enabled = true
 height = 40
 color = '0x40000000'
-blur = 30
+blur = true
 font = 'Hack Nerd Font'
 auto-hide = true
 left   = ['workspaces', 'front-app']
