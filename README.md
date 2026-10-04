@@ -9,6 +9,7 @@
   <a href="https://github.com/juniorsaldanha/hyprland-darwin/actions/workflows/ci.yml"><img src="https://github.com/juniorsaldanha/hyprland-darwin/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/juniorsaldanha/hyprland-darwin/releases/latest"><img src="https://img.shields.io/github/v/release/juniorsaldanha/hyprland-darwin?color=b44bff" alt="Release"></a>
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-ff2bd6" alt="MIT"></a>
+  <a href="https://buymeacoffee.com/umsaldanha"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-ffdd00?logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
   <br>
   <a href="https://juniorsaldanha.github.io/hyprland-darwin/">Website</a> ·
   <a href="#install">Install</a> ·
@@ -242,6 +243,11 @@ git tag v0.2.0 && git push origin v0.2.0
 
 The website is the static page in [`site/`](site). To use a custom domain, add a `site/CNAME` file containing the
 domain and point its DNS at GitHub Pages.
+
+## Support
+
+HyprDarwin is free and MIT licensed. If it saves you time, you can
+[buy me a coffee](https://buymeacoffee.com/umsaldanha). Bug reports, plugins and stars help just as much.
 
 ## Credits
 
