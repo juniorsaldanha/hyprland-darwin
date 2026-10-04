@@ -249,6 +249,8 @@ domain and point its DNS at GitHub Pages.
 HyprDarwin is free and MIT licensed. If it saves you time, you can
 [buy me a coffee](https://buymeacoffee.com/umsaldanha). Bug reports, plugins and stars help just as much.
 
+<a href="https://buymeacoffee.com/umsaldanha"><img src="site/assets/buymeacoffee-qr.png" width="160" alt="QR code for buymeacoffee.com/umsaldanha"></a>
+
 ## Credits
 
 - **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** by Nikita Bobko: the tiling core. MIT, see
