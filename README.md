@@ -158,7 +158,8 @@ go to it. Click a widget to send it a `click` event, or to open its popup menu.
 ## Plugins
 
 A plugin is a folder holding a `plugin.toml` and an executable. HyprDarwin looks in
-`~/.config/hyprland-darwin/plugins/<name>/`, then in the plugins bundled with the app. Put the name in a `[bar]` or
+`~/.config/hyprland-darwin/plugins/<name>/`, then in the plugins bundled with the app. `[plugins] dirs = ['~/my-plugins']`
+replaces the user folder; bundled plugins are always searched last. Put the name in a `[bar]` or
 `[notch]` list to place it.
 
 ```toml
