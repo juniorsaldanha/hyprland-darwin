@@ -72,6 +72,8 @@ extension CmdArgs {
                 command = MoveWorkspaceToMonitorCommand(args: self as! MoveWorkspaceToMonitorCmdArgs)
             case .newWindowOrOpen:
                 command = NewWindowOrOpenCommand(args: self as! NewWindowOrOpenCmdArgs)
+            case .pinApp:
+                command = PinAppCommand(args: self as! PinAppCmdArgs)
             case .reloadConfig:
                 command = ReloadConfigCommand(args: self as! ReloadConfigCmdArgs)
             case .resize:

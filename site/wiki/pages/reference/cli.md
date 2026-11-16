@@ -39,6 +39,7 @@ Shell completion for zsh, bash and fish is installed with Homebrew.
 | `workspace <name>` / `workspace next\|prev` | Switch workspace |
 | `workspace-back-and-forth` | Previous workspace |
 | `move-node-to-workspace <name>` | Send the window to a workspace |
+| `pin-app` | Always open the focused app in the current workspace (run again to unpin) |
 | `summon-workspace <name>` | Bring a workspace to the current monitor |
 | `focus-monitor next\|prev\|left\|…` | Focus another monitor |
 | `move-node-to-monitor next\|…` | Send the window to another monitor |

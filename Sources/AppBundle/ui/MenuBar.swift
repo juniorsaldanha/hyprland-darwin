@@ -39,6 +39,17 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                         }
                     }
                 }
+                if let title = viewModel.pinFocusedAppTitle {
+                    Button(title) { togglePinFocusedAppFromUi() }
+                }
+                if !viewModel.pinnedApps.isEmpty {
+                    Menu("Pinned apps") {
+                        Text("Click to unpin")
+                        ForEach(viewModel.pinnedApps.sorted { $0.key < $1.key }, id: \.key) { appId, workspace in
+                            Button("\(appDisplayName(appId)) → workspace \(workspace)") { unpinAppFromUi(appId) }
+                        }
+                    }
+                }
                 Divider()
             }
             Button("HyprDarwin on GitHub") {

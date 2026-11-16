@@ -139,6 +139,9 @@ let move_help_generated = """
 let new_window_or_open_help_generated = """
     USAGE: new-window-or-open [-h|--help] <app-name>
     """
+let pin_app_help_generated = """
+    USAGE: pin-app [-h|--help] [--window-id <window-id>]
+    """
 let reload_config_help_generated = """
     USAGE: reload-config [-h|--help] [--no-gui] [--dry-run] [--warnings-as-errors]
     """

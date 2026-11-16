@@ -14,6 +14,8 @@ public final class TrayMenuModel: ObservableObject {
     @Published var experimentalUISettings: ExperimentalUISettings = ExperimentalUISettings()
     @Published var lastReloadConfigContainedWarnings: Bool = false
     @Published var axPermissionStatus: AxPermissionStatus = .waitingWithPrompt
+    @Published var pinFocusedAppTitle: String? = nil
+    @Published var pinnedApps: [String: String] = [:]
 }
 
 enum AxPermissionStatus: Equatable {
@@ -67,6 +69,8 @@ enum AxPermissionStatus: Equatable {
         items.insert(mode, at: 0)
     }
     TrayMenuModel.shared.trayItems = items
+    TrayMenuModel.shared.pinFocusedAppTitle = pinFocusedAppMenuTitle()
+    TrayMenuModel.shared.pinnedApps = pinnedApps
 }
 
 struct WorkspaceViewModel: Hashable {

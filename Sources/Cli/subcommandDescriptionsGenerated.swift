@@ -34,6 +34,7 @@ let subcommandDescriptions = [
     ["  move-workspace-to-monitor", "Move workspace to monitor targeted by relative direction, by order, or by pattern."],
     ["  move", "Move the focused window in the given direction"],
     ["  new-window-or-open", "Open a new window of the app, or launch the app if it isn't running."],
+    ["  pin-app", "Always open the focused window's app in the current workspace"],
     ["  reload-config", "Reload currently active config"],
     ["  resize", "Resize the focused window"],
     ["  run-callback", "Run HyprDarwin config callbacks on demand"],

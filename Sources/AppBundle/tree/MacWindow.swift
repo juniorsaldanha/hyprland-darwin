@@ -259,6 +259,7 @@ func onWindowDetected(_ env: CmdEnv, _ io: CmdIo, _ window: Window) async -> Int
         appBundleId: window.app.rawAppBundleId,
         appName: window.app.name,
     ))
+    applyPinnedWorkspace(window, io)
     var lastExitCode = Int32ExitCode.succ
     for callback in config.onWindowDetected where await callback.matches(window) {
         lastExitCode = await callback.run.run(env.withWindowId(window.windowId), io)

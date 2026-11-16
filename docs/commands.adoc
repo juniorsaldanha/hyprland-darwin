@@ -238,6 +238,13 @@ include::aerospace-new-window-or-open.adoc[tags=synopsis]
 include::aerospace-new-window-or-open.adoc[tags=purpose]
 include::aerospace-new-window-or-open.adoc[tags=body]
 
+== pin-app
+----
+include::aerospace-pin-app.adoc[tags=synopsis]
+----
+include::aerospace-pin-app.adoc[tags=purpose]
+include::aerospace-pin-app.adoc[tags=body]
+
 == reload-config
 ----
 include::aerospace-reload-config.adoc[tags=synopsis]

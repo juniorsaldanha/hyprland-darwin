@@ -87,6 +87,8 @@ struct BarItemView: View {
                 BarIcon(icon: "\u{F054}", config: config, color: foreground).padding(.leading, 8).padding(.trailing, 4).padding(.horizontal, 5)
             case .frontApp(let name):
                 Text(name).font(labelFont).foregroundColor(foreground).padding(.horizontal, 5)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showPinMenu() }
             case .plugin(let name, let state):
                 HStack(spacing: 0) {
                     if let icon = state.icon, !icon.isEmpty {
@@ -145,6 +147,33 @@ struct BarIcon: View {
     let menu = NSMenu()
     items.forEach(menu.addItem)
     menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+}
+
+/// The front-app widget's menu: pin/unpin the focused app, and unpin any pinned app.
+/// The macOS menu bar (and so the tray icon) is only on the main display; this bar is on every display
+@MainActor private func showPinMenu() {
+    var items: [NSMenuItem] = []
+    if let title = pinFocusedAppMenuTitle() {
+        let item = NSMenuItem(title: title, action: #selector(PopupTarget.togglePin(_:)), keyEquivalent: "")
+        item.target = PopupTarget.shared
+        items.append(item)
+    }
+    let pins = pinnedApps.sorted { $0.key < $1.key }
+    if !pins.isEmpty {
+        let submenu = NSMenu()
+        for (appId, workspace) in pins {
+            let item = NSMenuItem(title: "\(appDisplayName(appId)) → workspace \(workspace)", action: #selector(PopupTarget.unpin(_:)), keyEquivalent: "")
+            item.target = PopupTarget.shared
+            item.representedObject = appId
+            item.toolTip = "Click to unpin"
+            submenu.addItem(item)
+        }
+        let parent = NSMenuItem(title: "Pinned apps", action: nil, keyEquivalent: "")
+        parent.submenu = submenu
+        if !items.isEmpty { items.append(.separator()) }
+        items.append(parent)
+    }
+    if !items.isEmpty { showMenu(items) }
 }
 
 /// SwiftUI has no right-click gesture on macOS: this view takes right-mouse-down and lets every other click through
@@ -224,6 +253,13 @@ func wrapped(_ text: String, width: Int) -> String {
     @objc func choose(_ sender: NSMenuItem) {
         guard let pair = sender.representedObject as? [String], pair.count == 2 else { return }
         runPluginCommand(pair[0], pair[1])
+    }
+
+    @objc func togglePin(_: NSMenuItem) { togglePinFocusedAppFromUi() }
+
+    @objc func unpin(_ sender: NSMenuItem) {
+        guard let appId = sender.representedObject as? String else { return }
+        unpinAppFromUi(appId)
     }
 
     @objc func copy(_ sender: NSMenuItem) {

@@ -1,0 +1,40 @@
+= aerospace-pin-app(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-pin-app
+// tag::purpose[]
+:manpurpose: Always open the focused window's app in the current workspace
+// end::purpose[]
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace pin-app [-h|--help] [--window-id <window-id>]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+New windows of a pinned app are moved to its workspace, and focus follows them.
+Running the command again in the same workspace unpins the app.
+Running it in another workspace moves the pin there.
+Pins are stored outside the config file and survive restarts.
+
+You can also pin from the menu bar icon, or by clicking the `front-app` widget of the bar.
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--window-id <window-id>::
+include::./util/window-id-flag-desc.adoc[]
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]
